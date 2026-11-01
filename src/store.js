@@ -1,28 +1,74 @@
+import { games } from './catalog.js';
 export const STORAGE_KEY = 'metallic-demo-v1';
+export const outfits = ['Classic', 'Explorer', 'Streetwear'];
+export const accessories = ['None', 'Cap', 'Headphones'];
+export const templates = ['Blank canvas', 'Obby', 'Open world', 'Social hangout'];
+export const colors = [
+  { value: '#394c60', name: 'Slate blue' }, { value: '#7e4fba', name: 'Violet' },
+  { value: '#a84354', name: 'Crimson' }, { value: '#3e8274', name: 'Forest' },
+  { value: '#d0a554', name: 'Gold' }, { value: '#e5e7eb', name: 'Cloud' },
+  { value: '#24262b', name: 'Charcoal' }, { value: '#d97c47', name: 'Terracotta' },
+];
 export const defaults = {
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone' },
-  outfit: 'Classic', color: '#394c60', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
-  requests: ['PixelNova', 'CloudBuilder'], projects: [], notifications: true, activity: true,
+  outfit: 'Classic', color: '#394c60', accessory: 'None', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
+  requests: ['PixelNova', 'CloudBuilder'], outgoing: [], projects: [], notifications: true, activity: true, launcherDismissed: false,
 };
+const username = value => typeof value === 'string' && /^[A-Za-z0-9_]{3,20}$/.test(value);
+const gameIds = new Set(games.map(game => game.id));
+const unique = (list, valid, limit = 200) => [...new Set(list.filter(valid))].slice(0, limit);
 export function loadState(storage) {
+  const state = structuredClone(defaults);
   try {
     const data = JSON.parse(storage.getItem(STORAGE_KEY));
-    if (!data || typeof data !== 'object') return structuredClone(defaults);
-    const state = structuredClone(defaults);
-    for (const key of ['favorites', 'friends', 'requests']) if (Array.isArray(data[key])) state[key] = data[key].filter(x => typeof x === 'string');
-    if (Array.isArray(data.projects)) state.projects = data.projects.filter(p => p && typeof p.id === 'string' && typeof p.name === 'string' && typeof p.template === 'string');
-    if (data.profile && typeof data.profile === 'object') for (const key of ['name', 'bio', 'visibility']) if (typeof data.profile[key] === 'string') state.profile[key] = data.profile[key];
-    if (['Classic', 'Explorer', 'Streetwear'].includes(data.outfit)) state.outfit = data.outfit;
-    if (/^#[a-f0-9]{6}$/i.test(data.color)) state.color = data.color;
-    for (const key of ['notifications', 'activity']) if (typeof data[key] === 'boolean') state[key] = data[key];
-    return state;
-  } catch { return structuredClone(defaults); }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return state;
+    if (Array.isArray(data.favorites)) state.favorites = unique(data.favorites, id => gameIds.has(id));
+    for (const key of ['friends', 'requests', 'outgoing']) if (Array.isArray(data[key])) state[key] = unique(data[key], username);
+    state.requests = state.requests.filter(name => !state.friends.includes(name));
+    state.outgoing = state.outgoing.filter(name => !state.friends.includes(name) && !state.requests.includes(name));
+    if (Array.isArray(data.projects)) {
+      const ids = new Set();
+      state.projects = data.projects.filter(p => p && typeof p.id === 'string' && /^[a-zA-Z0-9-]{1,64}$/.test(p.id)
+        && typeof p.name === 'string' && p.name.trim() && templates.includes(p.template))
+        .filter(p => !ids.has(p.id) && ids.add(p.id)).slice(0, 100)
+        .map(p => ({ id: p.id, name: p.name.trim().slice(0, 60), template: p.template,
+          description: typeof p.description === 'string' ? p.description.slice(0, 500) : '' }));
+    }
+    if (data.profile && typeof data.profile === 'object') {
+      if (username(data.profile.name)) state.profile.name = data.profile.name;
+      if (typeof data.profile.bio === 'string') state.profile.bio = data.profile.bio.slice(0, 240);
+      if (['Everyone', 'Friends only', 'Only me'].includes(data.profile.visibility)) state.profile.visibility = data.profile.visibility;
+    }
+    if (outfits.includes(data.outfit)) state.outfit = data.outfit;
+    if (accessories.includes(data.accessory)) state.accessory = data.accessory;
+    if (typeof data.color === 'string' && /^#[a-f0-9]{6}$/i.test(data.color)) state.color = data.color;
+    for (const key of ['notifications', 'activity', 'launcherDismissed']) if (typeof data[key] === 'boolean') state[key] = data[key];
+  } catch { /* Unavailable or corrupt storage uses safe defaults. */ }
+  return state;
 }
 export function saveState(storage, state) {
   try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; } catch { return false; }
 }
 export function filterGames(games, query = '', category = 'All', sort = 'recommended') {
   const result = games.filter(g => (category === 'All' || g.genre === category) && `${g.title} ${g.genre}`.toLowerCase().includes(query.trim().toLowerCase()));
+  if (sort === 'players') {
+    const count = value => parseFloat(value) * (value.endsWith('K') ? 1000 : 1);
+    return result.sort((a, b) => count(b.playing) - count(a.playing));
+  }
   return sort === 'rating' ? result.sort((a, b) => b.rating - a.rating) : sort === 'name' ? result.sort((a,b) => a.title.localeCompare(b.title)) : result;
+}
+// Preview transitions model requests without contacting real users.
+export function updateFriendship(state, action, name) {
+  if (!username(name) || name === state.profile.name) return false;
+  if (action === 'send' && ![...state.friends, ...state.requests, ...state.outgoing].includes(name)) state.outgoing.push(name);
+  else if (action === 'accept' && state.requests.includes(name)) {
+    state.requests = state.requests.filter(n => n !== name);
+    state.outgoing = state.outgoing.filter(n => n !== name);
+    if (!state.friends.includes(name)) state.friends.push(name);
+  } else if (action === 'decline') state.requests = state.requests.filter(n => n !== name);
+  else if (action === 'cancel') state.outgoing = state.outgoing.filter(n => n !== name);
+  else if (action === 'remove') state.friends = state.friends.filter(n => n !== name);
+  else return false;
+  return true;
 }
 export const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

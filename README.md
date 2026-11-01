@@ -20,13 +20,16 @@ Landing `/`, login `/login`, signup `/signup`, launcher `/download`, home `/home
 
 ## Working interactions
 
-- Experience search, genre filtering, sorting, detail pages, and persistent favorites.
-- Outfit and color selection, live avatar preview, save and reset.
-- Local experience drafts with template selection, details, and deletion confirmation.
-- Friend search, sample friend requests, accept/decline, discovery, and removal confirmation.
+- Experience search with keyboard-accessible suggestions, URL-backed genre filters and sorting, detailed experience pages, share links, and persistent favorites.
+- Outfit, accessory, and color selection with front/back previews, unsaved-change indicators, and saved looks reflected in the header and profile.
+- Local experience drafts with editable names, templates, descriptions, and deletion confirmation.
+- Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
 - Validated signup/login preview forms and accessible pack-preview dialogs.
-- Responsive navigation, semantic forms, keyboard focus, native modal dialogs, reduced-motion support.
+- Desktop sidebar, mobile navigation bar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
+- Unsaved settings protection and normalization of previously saved browser data.
+
+Explore filters and friend tabs survive reloads and can be bookmarked. For example: `#/explore?category=Action&sort=rating` and `#/friends?tab=sent`. Community profile previews use `#/profile?user=heroX_x`.
 
 ## Integration boundaries
 
@@ -38,11 +41,18 @@ The launcher is explicitly unavailable until signed release artifacts and suppor
 
 - `src/app.js`: route views, shared components, and UI event handling.
 - `src/store.js`: browser-state adapter, normalization, escaping, and catalog filtering.
+- `src/router.js`: route and query parsing for persistent filters and tabs.
+- `src/avatar.js`: saved-avatar portraits and stable sample community identities.
 - `src/catalog.js`: sample catalog extracted from the supplied reference.
 - `src/reference.css`: original reference styles.
 - `src/styles.css`: page additions and responsive styles.
+- `src/refinements.css`: platform layout refinements and mobile navigation.
 - `public/art/`: self-contained SVG artwork extracted from the reference; no external image dependencies.
 - `scripts/`: dependency-free development server and build copier.
-- `tests/`: meaningful state, filtering, and input-escaping tests using the Node test runner.
+- `tests/`: state migration, friendship transitions, filtering, routing, escaping, SVG integrity, and preview HTTP tests using the Node test runner.
+
+The preview server listens only on loopback and serves application assets. Repository metadata and local configuration are excluded from HTTP access. Production builds replace only the generated `dist/` directory so deleted assets cannot remain in a release.
+
+See [the verification record](docs/verification.md) for the latest review coverage.
 
 Keep authentication, user data, wallet operations, and creator publishing behind service adapters when connecting a backend; do not treat localStorage as an authority for any live account or purchase.
