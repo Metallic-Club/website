@@ -26,8 +26,28 @@ export const sampleGroups = [
     members: ['PixelNova', 'NeonFox', 'LunaBlocks'], games: [] },
 ];
 
+const sampleGroupRoles = {
+  'metallic-studio': { heroX_x: 'Admin', PixelNova: 'Developer' },
+  riftforge: { CRIMSONSLAYER: 'Moderator' },
+  'cozy-builders': { CloudBuilder: 'Developer' },
+  'sound-lab': { NeonFox: 'Composer' },
+};
+export const groupRole = (group, name) => group.owner === name ? 'Owner' : Object.hasOwn(group.roles || {}, name) ? group.roles[name] : 'Member';
+export function groupsForProfile(state, name) {
+  return getGroups(state).filter(group => name === state.profile.name
+    ? group.mine || state.groupMemberships.includes(group.id)
+    : groupMembers(group, state).includes(name)).map(group => ({ ...group, role: groupRole(group, name), owned: group.owner === name }));
+}
+export function friendActivity(state, name) {
+  if (!state.friends.includes(name)) return null;
+  const session = friendSessions.find(session => session.name === name);
+  if (!session) return null;
+  const game = games.find(game => game.id === session.gameId);
+  const server = sampleServers(session.gameId).find(server => server.id === session.serverId);
+  return game ? { session, game, access: friendJoinAccess(state, session, server) } : null;
+}
 export function getGroups(state) {
-  return [...sampleGroups.map(group => ({ ...group, mine: false })), ...(state.myGroups || []).map(group => ({ ...group,
+  return [...sampleGroups.map(group => ({ ...group, mine: false, roles: sampleGroupRoles[group.id] || {} })), ...(state.myGroups || []).map(group => ({ ...group,
     owner: state.profile.name, emblem: group.name[0].toUpperCase(), color: 'silver', mine: true, games: [],
     shout: 'Welcome to ' + group.name + '. Your group starts here.', members: [state.profile.name],
   }))];

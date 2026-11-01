@@ -33,6 +33,9 @@ Explore filters and friend tabs survive reloads and can be bookmarked. For examp
 
 - Game pages include active-session previews, player avatars with hover/focus names, full-server and join-privacy states, friend joining, and links to the owning group or player.
 - Reserved server previews cost 100 demo Alloy once. Creation supports public or invite-only access, specific friends, and allowing all friends. Reconfiguration does not charge again.
+- Home friends show a compact activity popup on hover, keyboard focus, or tap, with game artwork and join controls that respect the same session access rules as game pages.
+- Global search covers games, people (including your profile and saved friends), and groups, with grouped suggestions and category-filtered results. Search placeholders fade when focused.
+- Profile groups display membership roles and a crown badge for owned groups, using the same role data as group member lists.
 - Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. A locally created group can own a game draft through the Creator field in the game editor.
 
 ## Integration boundaries

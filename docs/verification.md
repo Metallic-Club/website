@@ -4,9 +4,12 @@ Reviewed November 1, 2026. The supplied Metallic reference remains the basis of 
 
 ## Automated verification
 
-`npm test` covers 26 checks:
+`npm test` covers 30 checks:
 
 - Standalone SVG XML casing and internal paint references.
+- Global games/people/groups search, including custom groups, own profile, deduplication, and empty queries.
+- Profile memberships, role labels, owner badges, pending requests, and leaving groups.
+- Home friend activity follows session membership and joins-off checks.
 - Search, genre filtering, rating sorting, and popular sorting without catalog mutation.
 - Browser-state persistence and fallback when storage is corrupt or unavailable.
 - Safe rendering of user-entered content.
@@ -25,7 +28,11 @@ Responsive coverage includes desktop, tablet widths of 768 and 1024 pixels, and 
 
 Exercised in the browser:
 
-- Search suggestions, filtered results, rapid category/sort changes, and reload persistence.
+- Grouped global search suggestions, Games/People/Groups result tabs, direct profile/group links, empty results, and URL reload persistence.
+- Home friend popup placement, join preview, joins-off state, keyboard entry, Escape dismissal with focus restoration, and mobile layout.
+- Search placeholder fades on focus in the header, Explore, Friends, Marketplace, and Groups.
+- Profile group cards show owner crowns and Admin/Developer/Member roles; personal groups remain after reload.
+- Filtered results, rapid category/sort changes, and reload persistence.
 - Outfit/accessory/color changes, saved-avatar consistency, and front/back controls.
 - Friend request creation, pending state, persistence, cancellation, and profile navigation.
 - Creator draft creation, editing, and reload persistence.
