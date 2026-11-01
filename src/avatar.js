@@ -16,7 +16,7 @@ export function portrait(state, cls = '', label = 'Your saved avatar') {
 }
 export const community = [
   { name: 'heroX_x', avatar: 1, activity: 'Playing Cyber Raven', game: '1', bio: 'Always up for one more adventure.' },
-  { name: 'CRIMSONSLAYER', avatar: 2, activity: 'Online', bio: 'Exploring worlds and chasing high scores.' },
+  { name: 'CRIMSONSLAYER', avatar: 2, activity: 'Playing Cyber Raven', game: '1', bio: 'Exploring worlds and chasing high scores.' },
   { name: '00RIP_INDRA', avatar: 3, activity: 'Playing Rift Hunters', game: '3', bio: 'New worlds. New challenges.' },
   { name: 'PixelNova', avatar: 1, activity: 'Offline', bio: 'Making small worlds with big ideas.' },
   { name: 'CloudBuilder', avatar: 2, activity: 'Online', bio: 'Building something new every day.' },

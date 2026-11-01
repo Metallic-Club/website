@@ -1,5 +1,6 @@
 import { games } from './catalog.js';
 import { genres, cosmeticSlots, creatorTypes } from './platform.js';
+import { DEFAULT_ALLOY, normalizeSocialState } from './social.js';
 export const STORAGE_KEY = 'metallic-demo-v1';
 export const outfits = ['Classic', 'Explorer', 'Streetwear'];
 export const accessories = ['None', 'Cap', 'Headphones'];
@@ -16,6 +17,7 @@ export const defaults = {
   requests: ['PixelNova', 'CloudBuilder'], outgoing: [], projects: [], notifications: true, activity: true, launcherDismissed: false,
   preferredGenres: [], hiddenGames: [], creatorAssets: [], savedAssets: [], readNotifications: [],
   updateNotifications: true, friendPolicy: 'Everyone',
+  previewAlloy: DEFAULT_ALLOY, reservedServers: [], myGroups: [], groupMemberships: [], groupRequests: [], joinPolicy: 'Friends',
 };
 const username = value => typeof value === 'string' && /^[A-Za-z0-9_]{3,20}$/.test(value);
 const gameIds = new Set(games.map(game => game.id));
@@ -50,7 +52,7 @@ export function loadState(storage) {
         && typeof p.name === 'string' && p.name.trim() && templates.includes(p.template))
         .filter(p => !ids.has(p.id) && ids.add(p.id)).slice(0, 100)
         .map(p => ({ id: p.id, name: p.name.trim().slice(0, 60), template: p.template,
-          description: typeof p.description === 'string' ? p.description.slice(0, 500) : '' }));
+          description: typeof p.description === 'string' ? p.description.slice(0, 500) : '', groupId: typeof p.groupId === 'string' ? p.groupId : '' }));
     }
     if (data.profile && typeof data.profile === 'object') {
       if (username(data.profile.name)) state.profile.name = data.profile.name;
@@ -62,6 +64,7 @@ export function loadState(storage) {
     if (typeof data.color === 'string' && /^#[a-f0-9]{6}$/i.test(data.color)) state.color = data.color;
     for (const key of ['notifications', 'activity', 'launcherDismissed', 'updateNotifications']) if (typeof data[key] === 'boolean') state[key] = data[key];
     if (['Everyone', 'Friends of friends', 'Nobody'].includes(data.friendPolicy)) state.friendPolicy = data.friendPolicy;
+    normalizeSocialState(data, state);
   } catch { /* Unavailable or corrupt storage uses safe defaults. */ }
   return state;
 }

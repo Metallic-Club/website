@@ -1,6 +1,6 @@
 # Metallic website
 
-A responsive front-end foundation for the Metallic gaming platform, based on the supplied `refrence/Metallic — Roblox-style home.html`. Its charcoal palette, layout, game artwork, avatar artwork, and game catalog are retained and extended. The original reference is preserved unchanged; Servers is omitted from the application UI.
+A responsive front-end foundation for the Metallic gaming platform, based on the supplied `refrence/Metallic — Roblox-style home.html`. Its charcoal palette, layout, game artwork, avatar artwork, and game catalog are retained and extended. The original reference is preserved unchanged. Servers appear inside individual game pages, with Groups in the Community sidebar.
 
 ## Run locally
 
@@ -29,13 +29,17 @@ Landing `/`, login `/login`, signup `/signup`, launcher `/download`, home `/home
 - Four primary top tabs, a supplementary sidebar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
 - Unsaved settings protection and normalization of previously saved browser data.
 
-Explore filters and friend tabs survive reloads and can be bookmarked. For example: `#/explore?category=Action&sort=rating` and `#/friends?tab=sent`. Community profile previews use `#/profile?user=heroX_x`.
+Explore filters and friend tabs survive reloads and can be bookmarked. For example: `#/explore?category=Action&sort=rating` and `#/friends?tab=sent`. Community profile previews use `#/profile?user=heroX_x`. Game servers use `#/game/1?tab=servers`; groups use `#/groups` and `#/groups/metallic-studio`.
+
+- Game pages include active-session previews, player avatars with hover/focus names, full-server and join-privacy states, friend joining, and links to the owning group or player.
+- Reserved server previews cost 100 demo Alloy once. Creation supports public or invite-only access, specific friends, and allowing all friends. Reconfiguration does not charge again.
+- Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. A locally created group can own a game draft through the Creator field in the game editor.
 
 ## Integration boundaries
 
 This is a browser-only prototype. All catalog activity, friends, prices, and the Alloy balance are sample data. Local non-sensitive state is stored under `metallic-demo-v1`. Login/signup validate input but do not authenticate or create accounts; emails and passwords are never stored or transmitted. Live identity, sessions, authorization, email verification, account recovery, privacy enforcement, and moderation must be implemented in a trusted backend before launch.
 
-The launcher is explicitly unavailable until signed release artifacts and supported-platform requirements exist. The store previews illustrative packs; there is no checkout, money collection, or wallet mutation. Add a payment provider and server-verified payment processing with an authoritative currency ledger before enabling purchases. Creator projects are browser-local planning drafts, not playable or published games. No messages or friend requests are sent to real people.
+The launcher is explicitly unavailable until signed release artifacts and supported-platform requirements exist. The store previews illustrative packs; there is no checkout or money collection. The browser-local demo Alloy balance starts at 1,450 and is reduced by 100 when a server preview is created. It is not a real wallet. Add a trusted authoritative ledger before enabling live currency operations. Creator projects, groups, and server reservations are local previews; server creation does not provision a running server. Joining previews a launcher handoff. No group requests, messages, or friend requests are sent to real people.
 
 ## Structure
 
@@ -43,12 +47,14 @@ The launcher is explicitly unavailable until signed release artifacts and suppor
 - `src/store.js`: browser-state adapter, normalization, escaping, and catalog filtering.
 - `src/router.js`: route and query parsing for persistent filters and tabs, with legacy game-link support.
 - `src/platform.js`: discovery ranking, filters, mutual-friend fixtures, creator categories, and marketplace sample data.
+- `src/social.js`: server previews, access checks, demo Alloy transitions, game ownership, groups, and social-state migration.
 - `src/avatar.js`: saved-avatar portraits and stable sample community identities.
 - `src/catalog.js`: sample catalog extracted from the supplied reference.
 - `src/reference.css`: original reference styles.
 - `src/styles.css`: page additions and responsive styles.
 - `src/refinements.css`: shared platform layout refinements.
 - `src/platform.css`: revised navigation, profile layouts, settings sections, creator libraries, marketplace, discovery, and responsive rules.
+- `src/social.css`: neutral discovery surfaces, game sessions, player tooltips, and group layouts.
 - `public/art/`: self-contained SVG artwork extracted from the reference; no external image dependencies.
 - `scripts/`: dependency-free development server and build copier.
 - `tests/`: state migration, friendship transitions, filtering, routing, escaping, SVG integrity, and preview HTTP tests using the Node test runner.
