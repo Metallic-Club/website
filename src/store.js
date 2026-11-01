@@ -1,4 +1,5 @@
 import { games } from './catalog.js';
+import { genres, cosmeticSlots, creatorTypes } from './platform.js';
 export const STORAGE_KEY = 'metallic-demo-v1';
 export const outfits = ['Classic', 'Explorer', 'Streetwear'];
 export const accessories = ['None', 'Cap', 'Headphones'];
@@ -13,6 +14,8 @@ export const defaults = {
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone' },
   outfit: 'Classic', color: '#394c60', accessory: 'None', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
   requests: ['PixelNova', 'CloudBuilder'], outgoing: [], projects: [], notifications: true, activity: true, launcherDismissed: false,
+  preferredGenres: [], hiddenGames: [], creatorAssets: [], savedAssets: [], readNotifications: [],
+  updateNotifications: true, friendPolicy: 'Everyone',
 };
 const username = value => typeof value === 'string' && /^[A-Za-z0-9_]{3,20}$/.test(value);
 const gameIds = new Set(games.map(game => game.id));
@@ -23,6 +26,21 @@ export function loadState(storage) {
     const data = JSON.parse(storage.getItem(STORAGE_KEY));
     if (!data || typeof data !== 'object' || Array.isArray(data)) return state;
     if (Array.isArray(data.favorites)) state.favorites = unique(data.favorites, id => gameIds.has(id));
+    if (Array.isArray(data.hiddenGames)) state.hiddenGames = unique(data.hiddenGames, id => gameIds.has(id));
+    if (Array.isArray(data.preferredGenres)) state.preferredGenres = unique(data.preferredGenres, genre => genres.includes(genre), 6);
+    for (const key of ['savedAssets', 'readNotifications']) if (Array.isArray(data[key])) state[key] = unique(data[key], value => typeof value === 'string' && /^[\w-]{1,80}$/.test(value));
+    if (Array.isArray(data.creatorAssets)) {
+      const ids = new Set();
+      state.creatorAssets = data.creatorAssets.filter(asset => asset && typeof asset.id === 'string' && /^[\w-]{1,64}$/.test(asset.id)
+        && typeof asset.name === 'string' && asset.name.trim() && Object.hasOwn(creatorTypes, asset.type) && asset.type !== 'games')
+        .filter(asset => !ids.has(asset.id) && ids.add(asset.id)).slice(0, 100).map(asset => ({
+          id: asset.id, name: asset.name.trim().slice(0, 60), type: asset.type,
+          subcategory: asset.type === 'cosmetics' ? (cosmeticSlots.includes(asset.subcategory) ? asset.subcategory : 'Hats') : (typeof asset.subcategory === 'string' ? asset.subcategory.slice(0, 30) : ''),
+          description: typeof asset.description === 'string' ? asset.description.slice(0, 500) : '',
+          price: Number.isSafeInteger(asset.price) ? Math.max(0, Math.min(asset.price, 1000000)) : 0,
+          listing: asset.listing === true,
+        }));
+    }
     for (const key of ['friends', 'requests', 'outgoing']) if (Array.isArray(data[key])) state[key] = unique(data[key], username);
     state.requests = state.requests.filter(name => !state.friends.includes(name));
     state.outgoing = state.outgoing.filter(name => !state.friends.includes(name) && !state.requests.includes(name));
@@ -42,7 +60,8 @@ export function loadState(storage) {
     if (outfits.includes(data.outfit)) state.outfit = data.outfit;
     if (accessories.includes(data.accessory)) state.accessory = data.accessory;
     if (typeof data.color === 'string' && /^#[a-f0-9]{6}$/i.test(data.color)) state.color = data.color;
-    for (const key of ['notifications', 'activity', 'launcherDismissed']) if (typeof data[key] === 'boolean') state[key] = data[key];
+    for (const key of ['notifications', 'activity', 'launcherDismissed', 'updateNotifications']) if (typeof data[key] === 'boolean') state[key] = data[key];
+    if (['Everyone', 'Friends of friends', 'Nobody'].includes(data.friendPolicy)) state.friendPolicy = data.friendPolicy;
   } catch { /* Unavailable or corrupt storage uses safe defaults. */ }
   return state;
 }

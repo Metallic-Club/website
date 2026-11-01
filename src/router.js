@@ -4,7 +4,7 @@ export const friendTabs = { all: 'All friends', requests: 'Requests', sent: 'Sen
 export function readRoute(hash) {
   const value = hash.replace(/^#/, '') || '/';
   const split = value.indexOf('?');
-  const route = (split < 0 ? value : value.slice(0, split)).replace(/^\/+|\/+$/g, '');
+  const route = (split < 0 ? value : value.slice(0, split)).replace(/^\/+|\/+$/g, '').replace(/^experience\//, 'game/');
   const params = new URLSearchParams(split < 0 ? '' : value.slice(split + 1));
   return {
     route, params,

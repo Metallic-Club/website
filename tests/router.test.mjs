@@ -24,3 +24,7 @@ test('query changes preserve existing filters and encode user input', () => {
   assert.equal(route.params.get('q'), 'a ? & #');
   assert.equal(readRoute('#/explore?q=why?').params.get('q'), 'why?');
 });
+test('old game links still resolve to the renamed game route', () => {
+  assert.equal(readRoute('#/experience/3').route, 'game/3');
+  assert.equal(readRoute('#/game/3').route, 'game/3');
+});
