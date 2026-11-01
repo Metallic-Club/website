@@ -19,7 +19,7 @@ export const community = [
   { name: 'CRIMSONSLAYER', avatar: 2, activity: 'Playing Cyber Raven', game: '1', bio: 'Exploring worlds and chasing high scores.' },
   { name: '00RIP_INDRA', avatar: 3, activity: 'Playing Rift Hunters', game: '3', bio: 'New worlds. New challenges.' },
   { name: 'PixelNova', avatar: 1, activity: 'Offline', bio: 'Making small worlds with big ideas.' },
-  { name: 'CloudBuilder', avatar: 2, activity: 'Online', bio: 'Building something new every day.' },
+  { name: 'CloudBuilder', avatar: 2, activity: 'Using Studio', bio: 'Building something new every day.' },
   { name: 'LunaBlocks', avatar: 3, activity: 'Online', bio: 'Here for the adventures and the people.' },
   { name: 'NeonFox', avatar: 1, activity: 'Offline', bio: 'Racing into the next chapter.' },
   { name: 'OrbitKai', avatar: 2, activity: 'Online', bio: 'See you among the stars.' },

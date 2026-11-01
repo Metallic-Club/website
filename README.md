@@ -35,6 +35,8 @@ Explore filters and friend tabs survive reloads and can be bookmarked. For examp
 - Reserved server previews cost 100 demo Alloy once. Creation supports public or invite-only access, specific friends, and allowing all friends. Reconfiguration does not charge again.
 - Home friends show a compact activity popup on hover, keyboard focus, or tap, with game artwork and join controls that respect the same session access rules as game pages.
 - Global search covers games, people (including your profile and saved friends), and groups, with grouped suggestions and category-filtered results. Search placeholders fade when focused.
+- Friend presence uses gray for offline/hidden, blue for online, green for playing, and orange for Studio across Home, Friends, and profile friend lists. Status labels are available on hover and to assistive technology.
+- Square profile group and badge tiles fit desktop and mobile layouts. The mutual-friend summary uses a text link above the friend list.
 - Profile groups display membership roles and a crown badge for owned groups, using the same role data as group member lists.
 - Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. A locally created group can own a game draft through the Creator field in the game editor.
 

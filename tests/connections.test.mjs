@@ -1,3 +1,4 @@
+import { resolvePresence, presenceFor } from '../src/presence.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaults } from '../src/store.js';
@@ -49,4 +50,21 @@ test('home friend activity uses the same joins-off and membership rules as game 
   assert.equal(friendActivity(state, 'LunaBlocks'), null);
   state.friends = state.friends.filter(name => name !== 'heroX_x');
   assert.equal(friendActivity(state, 'heroX_x'), null);
+});
+
+test('friend presence distinguishes offline, online, game, and Studio and respects hidden activity', () => {
+  assert.equal(resolvePresence({ activity: 'Offline' }).key, 'offline');
+  assert.equal(resolvePresence({ activity: 'Online' }).key, 'online');
+  assert.equal(resolvePresence({ activity: 'Playing Rift Hunters', game: '3' }).key, 'playing');
+  assert.equal(resolvePresence({ activity: 'Using Studio' }).key, 'studio');
+  for (const status of ['hidden', 'invisible', 'offline']) assert.equal(resolvePresence({ status, game: '1' }).key, 'offline');
+  assert.equal(resolvePresence({ hidden: true, activity: 'Playing a game', game: '1' }).key, 'offline');
+  assert.equal(resolvePresence({ invisible: true, activity: 'Using Studio' }).key, 'offline');
+  const state = structuredClone(defaults);
+  state.activity = false;
+  assert.equal(presenceFor(state, state.profile.name).key, 'offline');
+  state.activity = true;
+  assert.equal(presenceFor(state, state.profile.name).key, 'online');
+  assert.equal(presenceFor(state, 'CloudBuilder').key, 'studio');
+  assert.equal(friendActivity(state, 'PixelNova'), null);
 });

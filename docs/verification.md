@@ -4,12 +4,13 @@ Reviewed November 1, 2026. The supplied Metallic reference remains the basis of 
 
 ## Automated verification
 
-`npm test` covers 30 checks:
+`npm test` covers 31 checks:
 
 - Standalone SVG XML casing and internal paint references.
 - Global games/people/groups search, including custom groups, own profile, deduplication, and empty queries.
 - Profile memberships, role labels, owner badges, pending requests, and leaving groups.
 - Home friend activity follows session membership and joins-off checks.
+- Presence maps offline/hidden/invisible, online, gameplay, and Studio consistently; hidden activity takes priority over gameplay.
 - Search, genre filtering, rating sorting, and popular sorting without catalog mutation.
 - Browser-state persistence and fallback when storage is corrupt or unavailable.
 - Safe rendering of user-entered content.
@@ -31,6 +32,9 @@ Exercised in the browser:
 - Grouped global search suggestions, Games/People/Groups result tabs, direct profile/group links, empty results, and URL reload persistence.
 - Home friend popup placement, join preview, joins-off state, keyboard entry, Escape dismissal with focus restoration, and mobile layout.
 - Search placeholder fades on focus in the header, Explore, Friends, Marketplace, and Groups.
+- Square profile group and badge tiles remain square without overflow at desktop, 320, 390, and 768 pixels. Group roles and owner crowns remain visible.
+- Profile mutual-friend summaries retain the text link and tab without miniature avatars.
+- Friend lists use gray offline/hidden, blue online, green playing, and orange Studio dots, with accessible status labels. Sample sessions agree with player activity.
 - Profile group cards show owner crowns and Admin/Developer/Member roles; personal groups remain after reload.
 - Filtered results, rapid category/sort changes, and reload persistence.
 - Outfit/accessory/color changes, saved-avatar consistency, and front/back controls.

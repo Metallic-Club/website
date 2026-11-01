@@ -66,9 +66,6 @@ export const friendSessions = [
   { name: 'heroX_x', gameId: '1', serverId: '1-public-1', joinsEnabled: true },
   { name: 'CRIMSONSLAYER', gameId: '1', serverId: '1-public-2', joinsEnabled: false },
   { name: '00RIP_INDRA', gameId: '3', serverId: '3-public-1', joinsEnabled: true },
-  { name: 'PixelNova', gameId: '13', serverId: '13-public-1', joinsEnabled: true },
-  { name: 'CloudBuilder', gameId: '5', serverId: '5-public-1', joinsEnabled: false },
-  { name: 'NeonFox', gameId: '9', serverId: '9-public-1', joinsEnabled: true },
 ];
 export const friendsPlaying = (state, gameId) => friendSessions.filter(session => session.gameId === gameId && state.friends.includes(session.name));
 export function sampleServers(gameId) {
