@@ -99,13 +99,13 @@ function modal(title, body) { dialog.innerHTML = `<div class="dialog-head"><h2 i
 const pageHead = (title, subtitle, action = '') => `<div class="page-head"><div><h1>${title}</h1><p class="welcome">${subtitle}</p></div>${action}</div>`;
 const empty = (title, text, action = '') => `<div class="empty-state">${icon('explore', 36)}<h3>${title}</h3><p>${text}</p>${action}</div>`;
 function card(game) {
-  return `<a class="game-card" href="#/game/${encodeURIComponent(game.id)}" aria-label="${esc(game.title)}">
+  return `<article class="game-card"><a class="game-card-link" href="#/game/${encodeURIComponent(game.id)}" aria-label="${esc(game.title)}">
     <span class="game-art"><img class="poster-art" src="${esc(game.art)}" alt="" loading="lazy" decoding="async" width="240" height="240">
-      <span class="game-genre">${esc(game.genre)}</span><span class="game-play">${icon('play', 18)}</span>
+      <span class="game-genre">${esc(game.genre)}</span>
       ${state.favorites.includes(game.id) ? `<span class="saved-marker" title="Saved to favorites">${icon('heart',13)}</span>` : ''}
     </span><span class="game-title">${esc(game.title)}</span>
     <span class="game-stats"><span class="stat-rating" aria-label="${game.rating} percent liked">${icon('thumbs',13)} ${game.rating}%</span><span aria-label="${esc(game.playing)} playing">${icon('profile',13)} ${esc(game.playing)}</span></span>
-  </a>`;
+  </a><div class="game-quick-play">${button('play','<svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4 18 12 6 20Z"/></svg>','game-play',`data-id="${esc(game.id)}" data-title="${esc(game.title)}" aria-label="Play ${esc(game.title)}"`)}</div></article>`;
 }
 function shelf(title, subtitle, items, id, destination = 'explore') {
   if(!items.length)return '';
@@ -542,7 +542,7 @@ document.addEventListener('click',async e=>{
     case 'category':setQuery({category:value==='All'?null:value});break;
     case 'clear-search':navigate('/explore');break;
     case 'favorite':if(games.some(g=>g.id===id)){state.favorites=state.favorites.includes(id)?state.favorites.filter(x=>x!==id):[...state.favorites,id];persist(state.favorites.includes(id)?'Added to your favorites.':'Removed from favorites.');render();}break;
-    case 'play':modal('Your next adventure is on its way',`<p class="muted">${esc(games.find(g=>g.id===id)?.title||'This game')} will open in the Metallic launcher when live gameplay is available.</p><p>This is a preview game. No game has been launched.</p>${link('download',icon('download',18)+' View launcher availability','button primary full')}`);break;
+    case 'play':modal('Your next adventure is on its way',`<p class="muted">${esc(games.find(g=>g.id===id)?.title||el.dataset.title||'This game')} will open in the Metallic launcher when live gameplay is available.</p><p>This is a preview game. No game has been launched.</p>${link('download',icon('download',18)+' View launcher availability','button primary full')}`);break;
     case 'share':try{await navigator.clipboard.writeText(location.href);toast('Game link copied.');}catch{modal('Share this game',`<label for="share-url">Game link</label><input id="share-url" class="share-url" readonly value="${esc(location.href)}"><p class="fine-print">Copy this link. Viewers still need access to this private preview.</p>`);document.querySelector('#share-url').select();}break;
     case 'password':{const input=document.querySelector('#password');const show=input.type==='password';input.type=show?'text':'password';el.textContent=show?'Hide':'Show';el.setAttribute('aria-label',show?'Hide password':'Show password');el.setAttribute('aria-pressed',String(show));break;}
     case 'recovery':modal('Account recovery',`<p class="muted">Account recovery will be available when live accounts launch. Preview logins do not create an account or store a password.</p>${link('home','Explore the preview','button primary full')}`);break;
