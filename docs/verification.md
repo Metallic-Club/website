@@ -4,7 +4,7 @@ Reviewed November 1, 2026. The supplied Metallic reference remains the basis of 
 
 ## Automated verification
 
-`npm test` covers 38 checks:
+`npm test` covers 42 checks:
 
 - Standalone SVG XML casing and internal paint references.
 - Global games/people/groups search, including custom groups, own profile, deduplication, and empty queries.
@@ -37,7 +37,7 @@ Exercised in the browser:
 - Friend lists use gray offline/hidden, blue online, green playing, and orange Studio dots, with accessible status labels. Sample sessions agree with player activity.
 - Profile group cards show owner crowns and Admin/Developer/Member roles; personal groups remain after reload.
 - Filtered results, rapid category/sort changes, and reload persistence.
-- Outfit/accessory/color changes, saved-avatar consistency, and front/back controls.
+- Wardrobe work-in-progress placeholder, no inventory/save controls, and generic player icons across all profile and social views.
 - Friend request creation, pending state, persistence, cancellation, and profile navigation.
 - Creator draft creation, editing, and reload persistence.
 - Mobile drawer navigation and protection of unsaved settings.
@@ -81,3 +81,11 @@ The 10,000-game fixture validates bounded pages, filters, stable ordering and ca
 The optimized production build was also exercised against a local API fixture: a failed request and manual retry, a 10,000-record total with 12 returned/rendered cards, page two, a non-sample game ID detail, and navigation away during a delayed response. The prior response did not replace the Home route. Versioned scripts, the single stylesheet and artwork loaded correctly. The fixture is ignored local QA material and is not in the published site.
 
 An all-hidden catalog has a direct restore action and does not render empty recommendation shelves. Existing saved preferences were preserved during the review.
+
+## Closed-beta review
+
+The pre-change branch codex/backup-pre-closed-beta was pushed and an offline Git bundle verified before editing. Closed-beta work lives on codex/closed-beta.
+
+The invite gate stays closed without an endpoint, on invalid/expired/malformed/rate-limited responses, and after cancellation. A local API fixture verified both the locked path and a successful short-lived verification; navigation clears access. Direct signup URLs, including invite query parameters, do not unlock signup. No real accounts or invitations were created.
+
+Landing, login, invite access, Wardrobe, Home and profiles were checked at 320, 390, 768 and 1024 pixels without horizontal overflow. Generic icons were checked on Home, profiles, Friends, server lists, group members and people search.

@@ -1,4 +1,4 @@
-# Metallic website
+# Metallic website — closed beta
 
 A responsive front-end foundation for the Metallic gaming platform, based on the supplied `refrence/Metallic — Roblox-style home.html`. Its charcoal palette, layout, game artwork, avatar artwork, and game catalog are retained and extended. The original reference is preserved unchanged. Servers appear inside individual game pages, with Groups in the Community sidebar.
 
@@ -22,11 +22,11 @@ Landing `/`, login `/login`, signup `/signup`, launcher `/download`, home `/home
 ## Working interactions
 
 - Game search with keyboard-accessible suggestions, URL-backed genre filters and sorting, detailed game pages, share links, and persistent favorites.
-- Outfit, accessory, and color selection with front/back previews, unsaved-change indicators, and saved looks reflected in the header and profile.
+- Generic profile icons for all players. Wardrobe is a work-in-progress placeholder; previous appearance data is preserved for future development.
 - Local game drafts with editable names, templates, descriptions, and deletion confirmation.
 - Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
-- Validated signup/login preview forms and accessible pack-preview dialogs.
+- Invite-gated signup with server verification, short-lived in-memory access and a fail-closed default. Login and verified signup remain account previews. Accessible pack-preview dialogs remain available.
 - Four primary top tabs, a supplementary sidebar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
 - Unsaved settings protection and normalization of previously saved browser data.
 
@@ -49,6 +49,12 @@ Production builds version assets by content, combine stylesheets, emit cache pol
 
 See [the scaling design](docs/scaling.md) for the API contract, implemented limits, production service boundaries, database/index guidance and launch measurements. Identity, game servers, currency, uploads and the player directory still require authoritative backend services.
 
+## Closed beta and backups
+
+The landing page presents Metallic as an invite-only closed beta. Public signup fields are hidden until a configured invite service validates a code. Without that backend, registration stays closed; there are no valid codes embedded in the frontend. Set the public build value METALLIC_BETA_API when a trusted HTTPS verifier is ready. See [closed-beta.md](docs/closed-beta.md) for the endpoint contract and account-service requirements.
+
+The pre-beta source is preserved on codex/backup-pre-closed-beta at f41a0ff69a87535bf702846a1cdb87a8bbefe5ca. The beta changes are maintained on codex/closed-beta. An offline Git bundle was also created and verified outside this checkout.
+
 ## Integration boundaries
 
 This is a browser-only prototype. All catalog activity, friends, prices, and the Alloy balance are sample data. Local non-sensitive state is stored under `metallic-demo-v1`. Login/signup validate input but do not authenticate or create accounts; emails and passwords are never stored or transmitted. Live identity, sessions, authorization, email verification, account recovery, privacy enforcement, and moderation must be implemented in a trusted backend before launch.
@@ -62,7 +68,9 @@ The launcher is explicitly unavailable until signed release artifacts and suppor
 - `src/router.js`: route and query parsing for persistent filters and tabs, with legacy game-link support.
 - `src/platform.js`: discovery ranking, filters, mutual-friend fixtures, creator categories, and marketplace sample data.
 - `src/social.js`: server previews, access checks, demo Alloy transitions, game ownership, groups, and social-state migration.
-- `src/avatar.js`: saved-avatar portraits and stable sample community identities.
+- `src/avatar.js`: shared generic profile icons and stable sample community identities.
+- `src/beta-access.js`: invite verification adapter and short-lived signup gate; no accepted codes in the frontend.
+- `src/beta.css`: closed-beta landing, invite forms and wardrobe placeholder.
 - `src/catalog.js`: small sample/bootstrap catalog extracted from the reference.
 - `src/catalog-service.js`: indexed local catalog and validated/cancellable HTTP catalog adapter.
 - `src/pagination.js`: bounded collection windows and compact-count parsing.

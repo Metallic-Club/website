@@ -15,6 +15,8 @@ async function walk(directory) {
 let html=await readFile('index.html','utf8');
 const api=process.env.METALLIC_CATALOG_API||'';
 if(api){const url=new URL(api);if(url.username||url.password||url.search||url.hash||!(url.protocol==='https:'||url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)))throw Error('Invalid public catalog API URL');html=html.replace('name="metallic-catalog-api" content=""','name="metallic-catalog-api" content="'+api.replaceAll('&','&amp;').replaceAll('"','&quot;')+'"');}
+const betaApi=process.env.METALLIC_BETA_API||'';
+if(betaApi){const url=new URL(betaApi);if(url.username||url.password||url.search||url.hash||!(url.protocol==='https:'||url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)))throw Error('Invalid public beta API URL');html=html.replace('name="metallic-beta-api" content=""','name="metallic-beta-api" content="'+betaApi.replaceAll('&','&amp;').replaceAll('"','&quot;')+'"');}
 const files=[...await walk('src'),...await walk('public')];
 const hash=createHash('sha256').update(html);
 for(const file of files){hash.update(file.replaceAll('\\','/'));hash.update(await readFile(file));}
