@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+const baseHeaders = { 'X-Content-Type-Options':'nosniff', 'Referrer-Policy':'strict-origin-when-cross-origin', 'Permissions-Policy':'camera=(), microphone=(), geolocation=()' };
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 export function createPreviewServer({ directory = '.', production = false } = {}) {
 const root = path.resolve(directory);
@@ -13,14 +14,15 @@ return http.createServer(async (req, res) => {
     let url = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     if (url === '/') url = '/index.html';
     // Serve application assets only; never expose repository metadata or local config.
-    if (!(url === '/index.html' || url === '/favicon.svg' || /^\/src\/[\w-]+\.(js|css)$/.test(url) || /^\/art\/[\w-]+\.svg$/.test(url))) {
+    const versioned=production&&/^\/assets\/[a-f0-9]{12}\/(?:src\/[\w-]+\.js|styles\.css|art\/[\w-]+\.svg|favicon\.svg)$/.test(url);
+    if (!(versioned || url === '/index.html' || url === '/favicon.svg' || /^\/src\/[\w-]+\.(js|css)$/.test(url) || /^\/art\/[\w-]+\.svg$/.test(url))) {
       res.writeHead(404).end('Not found'); return;
     }
     if (!production && (url.startsWith('/art/') || url === '/favicon.svg')) url = '/public' + url;
     const file = path.resolve(root, '.' + url);
     if (!file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
     const body = await readFile(file);
-    res.writeHead(200, { 'Content-Type': mime[path.extname(file)], 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+    res.writeHead(200, { 'Content-Type': mime[path.extname(file)], 'Cache-Control': versioned ? 'public, max-age=31536000, immutable' : 'no-cache', ...baseHeaders });
     res.end(req.method === 'HEAD' ? undefined : body);
   } catch { res.writeHead(404).end('Not found'); }
 });

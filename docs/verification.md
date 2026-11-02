@@ -4,7 +4,7 @@ Reviewed November 1, 2026. The supplied Metallic reference remains the basis of 
 
 ## Automated verification
 
-`npm test` covers 31 checks:
+`npm test` covers 38 checks:
 
 - Standalone SVG XML casing and internal paint references.
 - Global games/people/groups search, including custom groups, own profile, deduplication, and empty queries.
@@ -71,3 +71,13 @@ Group checks cover open membership, approval requests, cancellation, local creat
 The added automated tests cover server-creation idempotency, insufficient funds, invalid input, server access, joins-off privacy, membership transitions, creator ownership links, state migration, and invalid saved records.
 
 Design references: [Roblox private server configuration](https://en.help.roblox.com/hc/en-us/articles/205345050-Private-VIP-Servers-FAQ) and [Roblox community management](https://en.help.roblox.com/hc/en-us/articles/203313810-How-to-Manage-a-Community). Metallic uses its own sample pricing and simplified local preview behavior.
+
+## Scale review
+
+All main routes, settings sections, paginated search, game details, creator categories, groups and marketplace were checked on desktop. Representative views were checked at 320, 390, 768 and 1024 pixels without horizontal overflow. Catalog pagination, filter reset, stable sorting, square profile collections, friend presence and the existing join controls remain covered.
+
+The 10,000-game fixture validates bounded pages, filters, stable ordering and capped caches. The HTTP adapter has cancellation, timeout, retry, malformed response and oversized payload checks. A temporary production build test verifies repeatable asset versions, changed-input invalidation, CSS consolidation, immutable caching and file isolation. Build budgets and the synthetic benchmark run in CI. These checks are not a million-user backend load test. See [scaling.md](scaling.md).
+
+The optimized production build was also exercised against a local API fixture: a failed request and manual retry, a 10,000-record total with 12 returned/rendered cards, page two, a non-sample game ID detail, and navigation away during a delayed response. The prior response did not replace the Home route. Versioned scripts, the single stylesheet and artwork loaded correctly. The fixture is ignored local QA material and is not in the published site.
+
+An all-hidden catalog has a direct restore action and does not render empty recommendation shelves. Existing saved preferences were preserved during the review.

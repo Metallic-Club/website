@@ -10,6 +10,7 @@ Requires Node.js 22 or newer. No dependencies or installation step.
 npm run dev
 npm test
 npm run build
+npm run benchmark
 ```
 
 Open http://127.0.0.1:4173. The production build is in `dist/`; `node scripts/serve.mjs --dist` previews it. Deploy the contents of `dist/` to any static host. Hash routing works without rewrite rules and supports hosting under a repository subpath.
@@ -40,6 +41,14 @@ Explore filters and friend tabs survive reloads and can be bookmarked. For examp
 - Profile groups display membership roles and a crown badge for owned groups, using the same role data as group member lists.
 - Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. A locally created group can own a game draft through the Creator field in the game editor.
 
+## Scale-aware foundation
+
+Explore has genre shortcuts, discovery tabs, active filter chips and 12-card pages. Search, friends, groups, marketplace, creator libraries and profile collections have bounded result windows. The catalog repository indexes searchable metadata once and caches a bounded number of queries. An optional cancellable HTTP catalog client supports Explore and read-only game details, with loading, error and retry states.
+
+Production builds version assets by content, combine stylesheets, emit cache policies, and enforce compressed size budgets. CI runs a 10,000-game synthetic catalog benchmark. These are frontend bounds, not a guarantee of concurrent-player capacity.
+
+See [the scaling design](docs/scaling.md) for the API contract, implemented limits, production service boundaries, database/index guidance and launch measurements. Identity, game servers, currency, uploads and the player directory still require authoritative backend services.
+
 ## Integration boundaries
 
 This is a browser-only prototype. All catalog activity, friends, prices, and the Alloy balance are sample data. Local non-sensitive state is stored under `metallic-demo-v1`. Login/signup validate input but do not authenticate or create accounts; emails and passwords are never stored or transmitted. Live identity, sessions, authorization, email verification, account recovery, privacy enforcement, and moderation must be implemented in a trusted backend before launch.
@@ -54,14 +63,19 @@ The launcher is explicitly unavailable until signed release artifacts and suppor
 - `src/platform.js`: discovery ranking, filters, mutual-friend fixtures, creator categories, and marketplace sample data.
 - `src/social.js`: server previews, access checks, demo Alloy transitions, game ownership, groups, and social-state migration.
 - `src/avatar.js`: saved-avatar portraits and stable sample community identities.
-- `src/catalog.js`: sample catalog extracted from the supplied reference.
+- `src/catalog.js`: small sample/bootstrap catalog extracted from the reference.
+- `src/catalog-service.js`: indexed local catalog and validated/cancellable HTTP catalog adapter.
+- `src/pagination.js`: bounded collection windows and compact-count parsing.
+- `src/search.js`: local directory search across sample games, people and groups.
+- `src/presence.js`: shared visible activity mapping.
+- `src/scale.css`: catalog discovery, page controls, loading states and shared responsive refinements.
 - `src/reference.css`: original reference styles.
 - `src/styles.css`: page additions and responsive styles.
 - `src/refinements.css`: shared platform layout refinements.
 - `src/platform.css`: revised navigation, profile layouts, settings sections, creator libraries, marketplace, discovery, and responsive rules.
 - `src/social.css`: neutral discovery surfaces, game sessions, player tooltips, and group layouts.
 - `public/art/`: self-contained SVG artwork extracted from the reference; no external image dependencies.
-- `scripts/`: dependency-free development server and build copier.
+- `scripts/`: dependency-free preview server, content-versioned production builder and synthetic catalog benchmark.
 - `tests/`: state migration, friendship transitions, filtering, routing, escaping, SVG integrity, and preview HTTP tests using the Node test runner.
 
 The preview server listens only on loopback and serves application assets. Repository metadata and local configuration are excluded from HTTP access. Production builds replace only the generated `dist/` directory so deleted assets cannot remain in a release.

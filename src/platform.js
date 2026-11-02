@@ -1,3 +1,4 @@
+import { compactCount } from './pagination.js';
 // Sample content and client-side discovery for the platform preview.
 export const genres = ['Action', 'Adventure', 'Roleplay', 'Obby', 'Simulation', 'Racing'];
 export const cosmeticSlots = ['Hats', 'Shirts', 'Pants', 'Shoes', 'Shoulders', 'Back', 'Neck', 'Face', 'Waist'];
@@ -28,13 +29,14 @@ export const gameDetails = {
 };
 export function recommendationGenres(catalog, state) {
   const weights = new Map((state.preferredGenres || []).map(genre => [genre, 5]));
-  for (const game of catalog.filter(g => state.favorites.includes(g.id))) weights.set(game.genre, (weights.get(game.genre) || 0) + 3);
+  const favorites = new Set(state.favorites);
+  for (const game of catalog.filter(g => favorites.has(g.id))) weights.set(game.genre, (weights.get(game.genre) || 0) + 3);
   return weights;
 }
 export function recommendGames(catalog, state) {
-  const weights = recommendationGenres(catalog, state);
-  return catalog.filter(g => !(state.hiddenGames || []).includes(g.id)).map((game, index) => ({ game, index,
-    score: (weights.get(game.genre) || 0) * 10 + game.rating / 10 + (state.favorites.includes(game.id) ? -25 : 2),
+  const weights = recommendationGenres(catalog, state), favorites = new Set(state.favorites), hidden = new Set(state.hiddenGames || []);
+  return catalog.filter(g => !hidden.has(g.id)).map((game, index) => ({ game, index,
+    score: (weights.get(game.genre) || 0) * 10 + game.rating / 10 + (favorites.has(game.id) ? -25 : 2),
   })).sort((a, b) => b.score - a.score || a.index - b.index).map(item => item.game);
 }
 export function discoverGames(catalog, state, params) {
@@ -45,7 +47,7 @@ export function discoverGames(catalog, state, params) {
   const mood = params.get('mood') || 'All';
   const hideFavorites = params.get('unplayed') === '1';
   let result = recommendGames(catalog, state).filter(game => {
-    const info = gameDetails[game.id];
+    const info = game.metadata || gameDetails[game.id] || { tags: [], mode: 'Multiplayer', mood: 'Immersive' };
     return (!query || `${game.title} ${game.genre} ${info.tags.join(' ')}`.toLowerCase().includes(query))
       && (category === 'All' || game.genre === category) && game.rating >= minRating
       && (mode === 'All' || info.mode === mode) && (mood === 'All' || info.mood === mood)
@@ -53,7 +55,7 @@ export function discoverGames(catalog, state, params) {
   });
   const sort = params.get('sort');
   if (sort === 'rating') result.sort((a, b) => b.rating - a.rating);
-  if (sort === 'players') result.sort((a, b) => parseFloat(b.playing) - parseFloat(a.playing));
+  if (sort === 'players') result.sort((a, b) => compactCount(b.playing) - compactCount(a.playing));
   if (sort === 'name') result.sort((a, b) => a.title.localeCompare(b.title));
   return result;
 }

@@ -1,4 +1,5 @@
 import { games } from './catalog.js';
+import { compactCount } from './pagination.js';
 import { genres, cosmeticSlots, creatorTypes } from './platform.js';
 import { DEFAULT_ALLOY, normalizeSocialState } from './social.js';
 export const STORAGE_KEY = 'metallic-demo-v1';
@@ -25,7 +26,9 @@ const unique = (list, valid, limit = 200) => [...new Set(list.filter(valid))].sl
 export function loadState(storage) {
   const state = structuredClone(defaults);
   try {
-    const data = JSON.parse(storage.getItem(STORAGE_KEY));
+    const raw = storage.getItem(STORAGE_KEY);
+    if(typeof raw==='string'&&raw.length>512000)return state;
+    const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || Array.isArray(data)) return state;
     if (Array.isArray(data.favorites)) state.favorites = unique(data.favorites, id => gameIds.has(id));
     if (Array.isArray(data.hiddenGames)) state.hiddenGames = unique(data.hiddenGames, id => gameIds.has(id));
@@ -74,8 +77,7 @@ export function saveState(storage, state) {
 export function filterGames(games, query = '', category = 'All', sort = 'recommended') {
   const result = games.filter(g => (category === 'All' || g.genre === category) && `${g.title} ${g.genre}`.toLowerCase().includes(query.trim().toLowerCase()));
   if (sort === 'players') {
-    const count = value => parseFloat(value) * (value.endsWith('K') ? 1000 : 1);
-    return result.sort((a, b) => count(b.playing) - count(a.playing));
+    return result.sort((a, b) => compactCount(b.playing) - compactCount(a.playing));
   }
   return sort === 'rating' ? result.sort((a, b) => b.rating - a.rating) : sort === 'name' ? result.sort((a,b) => a.title.localeCompare(b.title)) : result;
 }
