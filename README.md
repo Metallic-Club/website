@@ -4,7 +4,7 @@ A responsive front-end foundation for the Metallic gaming platform, based on the
 
 ## Run locally
 
-To run either version entirely in your browser, use [Beta access preview](https://codespaces.new/Metallic-Club/website/tree/codex/closed-beta?quickstart=1) or [Early-release preview](https://codespaces.new/Metallic-Club/website/tree/codex/early-release-preview?quickstart=1). GitHub Codespaces starts the preview on port 4173. See [developer preview instructions](docs/developer-previews.md) for access details, local commands and version differences.
+Open the hosted [Beta access preview](https://metallic-club.github.io/website/beta/index.html#/) or [Early-release preview](https://metallic-club.github.io/website/early-release/index.html#/home) directly in your browser. No setup or GitHub sign-in is required. See [browser preview details](docs/developer-previews.md) for version differences and development options.
 
 Requires Node.js 22 or newer. No dependencies or installation step.
 
@@ -94,4 +94,4 @@ See [the verification record](docs/verification.md) for the latest review covera
 
 Keep authentication, user data, wallet operations, and creator publishing behind service adapters when connecting a backend; do not treat localStorage as an authority for any live account or purchase.
 
-GitHub Pages uses the checked production build in .github/workflows/static.yml and uploads only dist/. Public deployment runs only when repository Pages is already configured for Actions; otherwise the checked artifact is retained and deployment is skipped. The previous Jekyll workflow remains as a manual compatibility entry that delegates to that same pipeline, avoiding competing automatic deployments.
+GitHub Pages uses .github/workflows/static.yml to check and build both versions into .local/github-pages/, then publish the beta and early-release previews together. Only generated static assets are uploaded. The previous Jekyll workflow remains as a manual compatibility entry that delegates to the same pipeline.
