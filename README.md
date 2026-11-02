@@ -84,4 +84,4 @@ See [the verification record](docs/verification.md) for the latest review covera
 
 Keep authentication, user data, wallet operations, and creator publishing behind service adapters when connecting a backend; do not treat localStorage as an authority for any live account or purchase.
 
-GitHub Pages uses the checked production build in .github/workflows/static.yml and uploads only dist/. The previous Jekyll workflow remains as a manual compatibility entry that delegates to that same pipeline, avoiding competing automatic deployments.
+GitHub Pages uses the checked production build in .github/workflows/static.yml and uploads only dist/. Public deployment runs only when repository Pages is already configured for Actions; otherwise the checked artifact is retained and deployment is skipped. The previous Jekyll workflow remains as a manual compatibility entry that delegates to that same pipeline, avoiding competing automatic deployments.
