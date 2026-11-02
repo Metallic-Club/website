@@ -39,7 +39,7 @@ Exercised in the browser:
 - Filtered results, rapid category/sort changes, and reload persistence.
 - Outfit/accessory/color changes, saved-avatar consistency, and front/back controls.
 - Friend request creation, pending state, persistence, cancellation, and profile navigation.
-- Creator draft creation, editing, and reload persistence.
+- Local template import, download, and reload persistence.
 - Mobile drawer navigation and protection of unsaved settings.
 - Signup preview validation, password visibility, guest access, and recovery information.
 - Play-preview and Alloy-pack dialogs, including disabled checkout.
@@ -55,16 +55,16 @@ This remains a front-end foundation. Live authentication, gameplay, server provi
 - Settings has Account, Privacy & safety, Notifications, Game preferences, Security, and Preview data sections. Saving a section preserves the other sections.
 - The notification inbox is anchored beneath the bell, with read state, preferences, outside-click dismissal, and keyboard support. It does not open a modal backdrop.
 - Creator libraries include Games, Models & meshes, Audio & music, Plugins, and Cosmetics. Cosmetic slots include hats, shirts, pants, shoes, shoulders, back, neck, face, and waist.
-- Creator Marketplace supports asset search, category and price filters, saves, asset details, and local listing drafts with an Alloy price. Uploads, license terms, public sales, and delivery are not connected.
+- Creator Marketplace supports asset search, category and price filters, saves, dedicated asset pages, ratings, and preview inventory. File/folder imports stay in IndexedDB on the device; online uploads, public sales, and delivery are not connected.
 - Explore ranks games from genre preferences and favorites. It provides curated shelves, genre/mood/play-style/rating filters, favorite exclusion, recommendation feedback, and a separate popular-games section.
 
-Browser checks covered these revised pages at 320, 390, 768, and 1024 pixels as well as the normal desktop viewport. All tested routes fit without horizontal page overflow. Automated tests now include recommendation changes, hidden-game exclusion, combined discovery filters, mutual-friend intersections, asset filtering, draft normalization, and legacy game links.
+Browser checks covered these revised pages at 320, 390, 768, and 1024 pixels as well as the normal desktop viewport. All tested routes fit without horizontal page overflow. Automated tests now include recommendation changes, hidden-game exclusion, combined discovery filters, mutual-friend intersections, asset filtering, asset normalization, and legacy game links.
 
 ## Game sessions and groups
 
 Explore’s filter panel and featured recommendation now use the shared charcoal palette, neutral inputs, and a split artwork layout.
 
-Game-page checks cover player-avatar hover/focus tooltips, full-server disabling, friends with joins enabled or disabled, creator links to groups and personal profiles, public/private server creation, invited players, no-charge reconfiguration, persistent demo-balance deductions, and group-owned game drafts. Browser tests confirmed creation reduced 1,450 demo Alloy to 1,350 exactly once and changing access did not charge again.
+Game-page checks cover player-avatar hover/focus tooltips, full-server disabling, friends with joins enabled or disabled, creator links to groups and personal profiles, public/private server creation, invited players, no-charge reconfiguration, persistent demo-balance deductions, and group role permissions. Browser tests confirmed creation reduced 1,450 demo Alloy to 1,350 exactly once and changing access did not charge again.
 
 Group checks cover open membership, approval requests, cancellation, local creation, ownership, member roles, game ownership selection, and persistence after reload. Game, group, member, and Explore layouts were checked at 320, 390, 768, and 1024 pixels plus the normal desktop viewport with no horizontal page overflow.
 

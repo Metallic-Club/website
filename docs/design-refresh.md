@@ -4,7 +4,7 @@ The visual refresh uses an orange accent by default, the original Metallic mark,
 
 Themes are under Settings → Themes. Dark, light and system appearance, five accent palettes, standard/large text, and stronger contrast are stored independently under metallic-appearance-v1. Invalid saved values use safe defaults. System appearance follows device changes, and other tabs can pick up saved changes. Light themes use darker accent text while keeping action buttons neutral. Gameplay actions use green across all themes. Existing neutral colors are adapted through theme-palette.css; new component styles use semantic theme variables.
 
-The Creator hub offers Obby, Open world and Social hangout starting points. A template opens the existing project form with that template selected; it still saves only a local planning draft. Guides and API links are available beside these starting points.
+The Creator hub offers Obby, Open world and Social hangout starting points. Default templates have detail pages with example scene downloads. Custom templates can be imported from files or folders and remain on the device; no project-record workflow is used. Guides and API links are available beside these starting points.
 
 Documentation uses hash routes under #/docs. Eleven articles cover getting started, a first project, scripting basics, collectibles, checkpoints, an interactive door, Instance/Part, Vector3/Color3, signals, players, and server/client concepts. Articles have chapter navigation, reading guides, code copying, syntax highlighting and search. Engine-specific APIs are explicitly proposed examples. The website does not run Luau or provide an SDK. Standard language examples reference the official Luau syntax and type documentation.
 

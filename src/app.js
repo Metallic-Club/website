@@ -1,3 +1,7 @@
+import {createCreatorWorkspace} from './creator-workspace.js';
+import {createGroupControls} from './group-controls.js';
+import {assetById,clearFiles} from './creator-data.js';
+import {canGroup} from './group-access.js';
 import {loadAppearance,saveAppearance,applyAppearance,normalizeAppearance,defaultAppearance,themesPage} from './themes.js';
 import {documentationPage,docArticles} from './documentation.js';
 import { games } from './catalog.js';
@@ -5,7 +9,7 @@ import { searchSite } from './search.js';
 import { pageWindow } from './pagination.js';
 import { createLocalCatalog, createCatalogClient, metadataFor } from './catalog-service.js';
 import { presenceFor } from './presence.js';
-import { loadState, saveState, filterGames, updateFriendship, outfits, accessories, colors, templates, escapeHtml as esc } from './store.js';
+import { loadState, saveState, filterGames, updateFriendship, outfits, accessories, colors, escapeHtml as esc } from './store.js';
 import { readRoute, routeWithParams, categories, friendTabs } from './router.js';
 import { portrait, community, personInfo } from './avatar.js';
 import { SERVER_PRICE, groupRole, groupsForProfile, friendActivity, groupCategories, getGroups, findGroup, groupMembers, ownerForGame, friendsPlaying, friendSessions, sampleServers, serverAccess, friendJoinAccess, createServerPreview, reservedServerCards, updateGroupMembership } from './social.js';
@@ -21,7 +25,7 @@ applyAppearance(appearance,document.documentElement,themeMedia.matches);
 themeMedia.addEventListener('change',()=>applyAppearance(appearance,document.documentElement,themeMedia.matches));
 window.addEventListener('storage',event=>{if(event.key==='metallic-appearance-v1'){appearance=loadAppearance(storage);applyAppearance(appearance,document.documentElement,themeMedia.matches);if(route==='settings'&&params.get('section')==='themes')render();}});
 let route, params, category = 'All', sort = 'recommended', friendTab = 'All friends', wardrobeTab = 'Outfits', platform = 'Windows';
-let draftOutfit = state.outfit, draftColor = state.color, draftAccessory = state.accessory;
+let selectedOutfit = state.outfit, selectedColor = state.color, selectedAccessory = state.accessory;
 let avatarBack = false, settingsDirty = false, notificationsOpen = false;
 const app = document.querySelector('#app');
 const dialog = document.querySelector('#dialog');
@@ -202,41 +206,21 @@ function auth() {
     <div class="auth-divider"><span>or</span></div>${link('home','Explore as a guest','button full')}<p class="auth-switch">${signup?'Already exploring? '+link('login','Log in','text-link'):'New to Metallic? '+link('signup','Sign up','text-link')}</p></section></div>`;
 }
 function download() { return `${pageHead('The adventure starts here.','Your home for every Metallic game.')}<section class="download-hero"><div><span class="eyebrow">METALLIC LAUNCHER</span><h2>Less waiting.<br>More playing.</h2><p>One home for your games, your friends, and whatever you discover next.</p><div class="categories">${['Windows','macOS','Linux'].map(p=>button('platform',p,`cat ${platform===p?'selected':''}`,`data-value="${p}" aria-pressed="${platform===p}"`)).join('')}</div><button class="button primary download-button" disabled>${icon('download')} ${platform} release coming soon</button><p class="fine-print">The launcher is in development. An installer will appear here when an official release is available.</p></div><div class="launcher-mock"><div class="window-dots"><i></i><i></i><i></i><span>Metallic Launcher · Preview</span></div><img src="art/game-1.svg" alt="Launcher game preview"><div><strong>Your next adventure</strong><span>Cyber Raven: Neon Protocol</span><span class="launch-preview">${icon('play',15)} Jump in</span></div></div></section><div class="feature-columns download-features"><article><span class="step">01</span><h3>Get the launcher</h3><p>Download the official installer for your device when it becomes available.</p></article><article><span class="step">02</span><h3>Make yourself at home</h3><p>Sign in with your Metallic account and bring your identity with you.</p></article><article><span class="step">03</span><h3>Find your next favorite</h3><p>Explore games and jump into something new.</p></article></div><div class="panel"><h3>${platform} availability</h3><p class="muted">Release date, supported ${platform} versions, and system requirements will be confirmed with the first official launcher build.</p></div>`; }
-function mannequin(outfit=draftOutfit,color=draftColor,accessory=draftAccessory,back=avatarBack) {
+function mannequin(outfit=selectedOutfit,color=selectedColor,accessory=selectedAccessory,back=avatarBack) {
   return `<div class="mannequin ${outfit.toLowerCase()} ${back?'back-view':''} accessory-${accessory.toLowerCase()}" style="--shirt:${esc(color)}" role="img" aria-label="${esc(outfit)} avatar with ${accessory==='None'?'no accessory':accessory.toLowerCase()}, ${back?'back':'front'} view"><div class="figure-head"><i></i><i></i><span></span><div class="figure-accessory"></div></div><div class="figure-body"><b>M</b></div><div class="figure-arm left"></div><div class="figure-arm right"></div><div class="figure-leg left"></div><div class="figure-leg right"></div></div>`;
 }
 function wardrobe() {
-  const dirty=draftOutfit!==state.outfit||draftColor!==state.color||draftAccessory!==state.accessory;
+  const dirty=selectedOutfit!==state.outfit||selectedColor!==state.color||selectedAccessory!==state.accessory;
   return `${pageHead('Wardrobe','Make every adventure a little more you.',button('save-outfit',icon('check',17)+' Save look','button primary',dirty?'':'disabled'))}
     <div class="wardrobe-layout"><section class="avatar-preview"><div class="avatar-preview-top"><span class="eyebrow">YOUR AVATAR</span><span class="tag">${dirty?'Unsaved changes':'Equipped'}</span></div><div class="avatar-stage">${mannequin()}</div>
-    <div class="avatar-controls">${button('rotate-avatar',icon('rotate',16)+' '+(avatarBack?'Front view':'Back view'),'button small',`aria-pressed="${avatarBack}"`)}</div><h2>${esc(state.profile.name)}</h2><p>${esc(draftOutfit)} · ${colors.find(c=>c.value===draftColor)?.name||'Custom color'}</p><div class="equipped-items"><span>${icon('wardrobe',16)} ${draftOutfit}</span>${draftAccessory!=='None'?`<span>${draftAccessory}</span>`:''}</div></section>
+    <div class="avatar-controls">${button('rotate-avatar',icon('rotate',16)+' '+(avatarBack?'Front view':'Back view'),'button small',`aria-pressed="${avatarBack}"`)}</div><h2>${esc(state.profile.name)}</h2><p>${esc(selectedOutfit)} · ${colors.find(c=>c.value===selectedColor)?.name||'Custom color'}</p><div class="equipped-items"><span>${icon('wardrobe',16)} ${selectedOutfit}</span>${selectedAccessory!=='None'?`<span>${selectedAccessory}</span>`:''}</div></section>
     <section class="wardrobe-inventory"><div class="line-tabs" role="group" aria-label="Wardrobe categories">${['Outfits','Accessories','Colors'].map(t=>button('wardrobe-tab',t,wardrobeTab===t?'selected':'',`data-value="${t}" aria-pressed="${wardrobeTab===t}"`)).join('')}</div>
     <div class="inventory-heading"><div><h2>${wardrobeTab==='Colors'?'Choose a color':wardrobeTab==='Accessories'?'The finishing touch':'Your outfits'}</h2><p class="muted">${wardrobeTab==='Colors'?'A fresh color for your favorite look.':'Select an item to try it on.'}</p></div><span class="tag">${wardrobeTab==='Colors'?colors.length:3} items</span></div>
-    ${wardrobeTab==='Colors'?`<div class="color-grid">${colors.map(c=>`<button type="button" class="color-choice ${draftColor===c.value?'selected':''}" data-action="color" data-value="${c.value}" aria-label="${c.name}" aria-pressed="${draftColor===c.value}"><span style="--swatch:${c.value}">${draftColor===c.value?icon('check',24):''}</span><strong>${c.name}</strong></button>`).join('')}</div>`:
-    `<div class="outfit-grid">${(wardrobeTab==='Accessories'?accessories:outfits).map((name,i)=>`<button type="button" class="outfit-card ${(wardrobeTab==='Accessories'?draftAccessory:draftOutfit)===name?'selected':''}" data-action="${wardrobeTab==='Accessories'?'accessory':'outfit'}" data-value="${name}" aria-pressed="${(wardrobeTab==='Accessories'?draftAccessory:draftOutfit)===name}"><span class="outfit-art style-${i}">${portrait({outfit:wardrobeTab==='Outfits'?name:draftOutfit,color:draftColor,accessory:wardrobeTab==='Accessories'?name:draftAccessory},'', '')}<i>${icon('check',14)}</i></span><strong>${name}</strong><small>Owned</small></button>`).join('')}</div>`}
+    ${wardrobeTab==='Colors'?`<div class="color-grid">${colors.map(c=>`<button type="button" class="color-choice ${selectedColor===c.value?'selected':''}" data-action="color" data-value="${c.value}" aria-label="${c.name}" aria-pressed="${selectedColor===c.value}"><span style="--swatch:${c.value}">${selectedColor===c.value?icon('check',24):''}</span><strong>${c.name}</strong></button>`).join('')}</div>`:
+    `<div class="outfit-grid">${(wardrobeTab==='Accessories'?accessories:outfits).map((name,i)=>`<button type="button" class="outfit-card ${(wardrobeTab==='Accessories'?selectedAccessory:selectedOutfit)===name?'selected':''}" data-action="${wardrobeTab==='Accessories'?'accessory':'outfit'}" data-value="${name}" aria-pressed="${(wardrobeTab==='Accessories'?selectedAccessory:selectedOutfit)===name}"><span class="outfit-art style-${i}">${portrait({outfit:wardrobeTab==='Outfits'?name:selectedOutfit,color:selectedColor,accessory:wardrobeTab==='Accessories'?name:selectedAccessory},'', '')}<i>${icon('check',14)}</i></span><strong>${name}</strong><small>Owned</small></button>`).join('')}</div>`}
     <div class="wardrobe-save-note"><p>${dirty?'You have unsaved changes. Save your look to update your profile.':'Your saved look appears on your profile and across Metallic.'}</p>${button('reset-outfit','Reset changes','text-button',dirty?'':'disabled')}</div></section></div>`;
 }
-function creatorStarter(){
-  return '<section class="creator-start"><div class="section-top"><div><span class="eyebrow">START BUILDING</span><h2>Pick a starting point.</h2><p class="section-sub">Choose a template to make a local project draft.</p></div>'+link('docs/first-game','First game guide '+icon('arrow',16),'text-link')+'</div><div class="starter-grid">'+[['Obby','Jump right in.','Plan a short course with platforms and checkpoints.','2'],['Open world','Make room to explore.','Sketch a world players can explore at their own pace.','5'],['Social hangout','Bring people together.','Start with a shared space and a reason to stay.','6']].map(([template,title,description,art])=>'<article class="starter-card"><img src="art/game-'+art+'.svg" alt="'+template+' concept illustration" width="480" height="300"><div><span class="tag">'+template+'</span><h3>'+title+'</h3><p>'+description+'</p>'+button('template-project','Use template '+icon('arrow',16),'button primary small','data-value="'+template+'"')+'</div></article>').join('')+'</div><div class="creator-learning"><div><span class="eyebrow">LEARN AS YOU GO</span><h2>You don’t have to start from scratch.</h2><p>Read a guide, try a scripting example, or browse the proposed API.</p></div><div>'+link('docs/getting-started',icon('docs',20)+' Getting started','learning-link')+link('docs/collectible',icon('play',20)+' Make a collectible','learning-link')+link('docs/api-instance',icon('models',20)+' API reference','learning-link')+'</div></div></section>';
-}
-function create() {
-  const tab=Object.hasOwn(creatorTypes,params.get('tab'))?params.get('tab'):'games';
-  const slot=cosmeticSlots.includes(params.get('slot'))?params.get('slot'):'';
-  const listings=params.get('view')==='listings';
-  const items=tab==='games'?state.projects:state.creatorAssets.filter(asset=>asset.type===tab&&(!slot||asset.subcategory===slot)&&(!listings||asset.listing));
-  const draftPage=pageWindow(items,params.get('page'));
-  const singular={games:'game',models:'model',audio:'audio',plugins:'plugin',cosmetics:'cosmetic'}[tab];
-  return `${pageHead('Creator hub','Your games, assets, and next idea.',button(tab==='games'?'new-project':'new-asset',icon('create',17)+' New '+singular,'button primary',`data-value="${tab}"`))}
-    <div class="creator-topline"><nav class="creator-category-tabs" aria-label="Creator categories">${Object.entries(creatorTypes).map(([key,label])=>link('create?tab='+key,icon(key==='games'?'play':key==='cosmetics'?'wardrobe':key,18)+label,key===tab?'selected':'')).join('')}</nav>${link('marketplace','Creator Marketplace '+icon('arrow',16),'button small')}</div>
-    ${tab==='cosmetics'?`<nav class="cosmetic-slots" aria-label="Cosmetic categories">${link('create?tab=cosmetics','All cosmetics',!slot?'selected':'')}${cosmeticSlots.map(name=>link('create?tab=cosmetics&slot='+name,name,slot===name?'selected':'')).join('')}</nav>`:''}
-    <section class="creator-workspace-head"><div><span class="eyebrow">YOUR LIBRARY</span><h2>${slot||creatorTypes[tab]}</h2><p>${tab==='games'?'Plan, organize, and build your games.':tab==='models'?'Reusable models, meshes, and materials for your worlds.':tab==='audio'?'Music, ambience, and sounds that bring a game to life.':tab==='plugins'?'Tools that make creating a little easier.':'Wearable ideas, organized by where they belong.'}</p></div><div class="creator-total"><strong>${items.length}</strong><span>${listings?'listing drafts':'local drafts'}</span></div></section>
-    ${tab!=='games'?`<nav class="creator-library-tabs" aria-label="Library view">${link('create?tab='+tab+(slot?'&slot='+slot:''),'My assets',!listings?'selected':'')}${link('create?tab='+tab+'&view=listings'+(slot?'&slot='+slot:''),'Listing drafts',listings?'selected':'')}</nav>`:''}
-    ${items.length?`<div class="creator-draft-grid">${draftPage.items.map(item=>`<article class="creator-draft-card"><div class="draft-cover color-${tab==='audio'?'purple':tab==='cosmetics'?'amber':'blue'}">${assetIcon(tab)}<span class="tag">${item.listing?'Listing draft':'Draft'}</span></div><div class="draft-card-body"><h3>${esc(item.name)}</h3><p>${esc(tab==='games'?item.template+(item.groupId?' · '+(findGroup(state,item.groupId)?.name||'Group'):''):item.subcategory||creatorTypes[tab])}</p><div class="button-row">${button(tab==='games'?'edit-project':'edit-asset','Edit','button small',`data-id="${esc(item.id)}"`)}${tab==='games'?button('delete-project','Delete','button quiet small',`data-id="${esc(item.id)}"`):button('prepare-listing',item.listing?'Edit listing':'Prepare listing','button small',`data-id="${esc(item.id)}"`)}</div></div></article>`).join('')}</div>`:
-    tab==='games'&&!listings?creatorStarter():empty(listings?'Your first listing starts here.':`Your next ${singular} starts here.`,listings?'Create an asset, then prepare its marketplace listing.':tab==='games'?'Give your idea a name and choose a starting template.':'Organize an idea, add its details, and prepare it for your creator library.',button(tab==='games'?'new-project':'new-asset','Create '+singular,'button primary',`data-value="${tab}"`))}
-    ${pageLinks(draftPage,'creator drafts')}
-    <section class="creator-market-banner"><span class="market-banner-icon">${icon('marketplace',34)}</span><div><span class="eyebrow">MADE FOR CREATORS</span><h2>Build with the community.</h2><p>Find models, audio, plugins, and cosmetics—or prepare your own assets for sale.</p></div>${link('marketplace','Browse Marketplace '+icon('arrow',17),'button')}</section>
-    <p class="fine-print">Local planning drafts. Asset uploads, Studio editing, marketplace publication, and sales will connect when creator services launch.</p>`;
-}
+function create(){return creatorWorkspace.createPage();}
 const packs = [{amount:400,price:'$4.99'},{amount:800,price:'$9.99'},{amount:1700,price:'$19.99'},{amount:4500,price:'$49.99'}];
 function alloy() { return `${pageHead('Buy Alloy','More ways to make Metallic your own.')}<section class="alloy-intro"><div class="alloy-coin">${icon('alloy',72)}</div><div><span class="eyebrow">MAKE MORE OF METALLIC</span><h2>Put your own spin on play.</h2><p>Personalize your avatar and discover more ways to express yourself.</p></div><div class="balance"><span>Preview balance</span><strong>${icon('alloy',24)} ${state.previewAlloy.toLocaleString()}</strong></div></section><div class="notice"><span>${icon('alloy')}<span><strong>Store preview</strong><small>Illustrative packs and prices. Purchases are not available and no payment is collected.</small></span></span></div><div class="alloy-packs">${packs.map((p,i)=>`<article class="alloy-pack ${i===2?'featured':''}">${i===2?'<span class="pack-ribbon">A little extra possibility</span>':''}${icon('alloy',44)}<h2>${p.amount.toLocaleString()}</h2><p>Alloy</p><strong class="pack-price">${p.price} <small>USD</small></strong>${button('review-pack','Preview pack','button '+(i===2?'primary':''),`data-index="${i}"`)}</article>`).join('')}</div><section class="faq"><h2>Good to know</h2><details><summary>What is Alloy?</summary><p>Alloy is the planned virtual currency for Metallic, designed for avatar items and in-game content.</p></details><details><summary>Can I buy Alloy now?</summary><p>Not yet. This is a store preview. Payment processing, final pricing, and purchase terms will be added before the store launches.</p></details><details><summary>Will my preview balance be saved?</summary><p>The displayed ${state.previewAlloy.toLocaleString()} Alloy is sample content. It is not a real wallet or a transferable balance.</p></details></section>`; }
 function profile() {
@@ -246,7 +230,7 @@ function profile() {
   const name=own?state.profile.name:requested, friends=own?state.friends:[...new Set([...(connections[name]||[]),...(state.friends.includes(name)?[state.profile.name]:[])])], mutual=own?[]:mutualFriends(state,name);
   const favorites=games.filter(game=>(own?state.favorites:(sampleFavorites[name]||[])).includes(game.id));
   const publishedCreations=games.filter(game=>{const owner=ownerForGame(game.id);return owner.type==='user'&&owner.id===name;});
-  const favoritePage=pageWindow(favorites,params.get('favoritePage')), creationPage=pageWindow(own?state.projects:[],params.get('creationPage'));
+  const favoritePage=pageWindow(favorites,params.get('favoritePage'));
   const friendAction=state.friends.includes(name)?button('remove-friend','Friends '+icon('check',16),'button',`data-name="${esc(name)}"`):state.requests.includes(name)?button('accept-friend','Accept request','button primary',`data-name="${esc(name)}"`):state.outgoing.includes(name)?button('cancel-friend','Cancel request','button',`data-name="${esc(name)}"`):button('add-friend','Add friend','button primary',`data-name="${esc(name)}"`);
   return `<section class="profile-cover"><div class="cover-mark">M</div><span class="eyebrow">${own?'YOUR CORNER OF METALLIC':'PLAYER PROFILE'}</span></section>
     <section class="profile-header">${own?avatar(0,'profile-avatar'):referenceAvatar(person.avatar,'profile-avatar')}<div><h1>${esc(name)}</h1><p>@${esc(name)} ${own?(state.activity?'<span class="profile-online">● Online in preview</span>':''):`<span class="profile-online">${person.activity}</span>`}</p>
@@ -254,7 +238,7 @@ function profile() {
     <div class="account-profile-layout"><div class="profile-main-column">
     ${profileFriends(friends,own,mutual,params.get('friends')==='mutual')}
     <section class="profile-section"><div class="section-top"><h2>Favorite games <span class="muted">(${favorites.length})</span></h2>${own?link('explore','Find more →','view-all'):''}</div>${favorites.length?`<div class="game-grid profile-games">${favoritePage.items.map(card).join('')}</div>`:'<div class="inline-empty">No favorite games yet.'+(own?' '+link('explore','Find your next favorite →','text-link'):'')+'</div>'}${pageLinks(favoritePage,'favorite games','favoritePage')}</section>
-    <section class="profile-section"><div class="section-top"><h2>Creations <span class="muted">(${publishedCreations.length+(own?state.projects.length:0)})</span></h2>${own?link('create','Creator hub →','view-all'):''}</div>${publishedCreations.length?`<div class="game-grid profile-games">${publishedCreations.map(card).join('')}</div>`:''}${own&&state.projects.length?creationPage.items.map(project=>`<div class="creation-row"><span>${icon('create')} ${esc(project.name)}</span>${button('edit-project','Edit draft','button small',`data-id="${esc(project.id)}"`)}</div>`).join(''):publishedCreations.length?'':'<div class="inline-empty">'+(own?'Your next idea belongs here. '+link('create','Create a game →','text-link'):'No published games yet.')+'</div>'}${pageLinks(creationPage,'creations','creationPage')}</section>
+    <section class="profile-section"><div class="section-top"><h2>Creations <span class="muted">(${publishedCreations.length})</span></h2>${own?link('create','Creator hub →','view-all'):''}</div>${publishedCreations.length?`<div class="game-grid profile-games">${publishedCreations.map(card).join('')}</div>`:'<div class="inline-empty">No published games yet.'+(own?' '+link('create?tab=templates','Choose a template →','text-link'):'')+'</div>'}</section>
     ${profileGroups(name,own)}
     <section class="profile-section"><div class="section-top"><h2>Badges</h2><span class="muted small-text">Preview collection</span></div><div class="badge-grid">${badges.slice(0,own?3:2).map((badge,i)=>`<article class="profile-badge"><span class="badge-emblem badge-${i}">${icon(badge.icon,28)}</span><div><h3>${badge.name}</h3><p>${badge.description}</p></div></article>`).join('')}</div></section>
     </div><aside class="profile-meta-column"><section class="panel profile-about"><h3>About</h3><p>${esc(own?state.profile.bio:person.bio)||'No bio yet.'}</p><span class="tag">${own?'Your profile':'Sample player'}</span>${own?link('wardrobe','Customize avatar →','button full'):''}</section>${own?`<section class="profile-avatar-stage">${mannequin(state.outfit,state.color,state.accessory,false)}<span>Currently wearing · ${state.outfit}</span></section>`:''}</aside></div>`;
@@ -272,7 +256,7 @@ function settings() {
   if(section==='notifications')content=settingsForm(section,`<label class="toggle-row"><span><strong>Friend requests</strong><small>See incoming friend requests in your inbox.</small></span><input name="notifications" type="checkbox" role="switch" ${state.notifications?'checked':''}></label><label class="toggle-row"><span><strong>Platform updates</strong><small>See welcome messages and platform announcements.</small></span><input name="updates" type="checkbox" role="switch" ${state.updateNotifications?'checked':''}></label><div class="settings-info">${icon('bell',20)}<p>Notifications open from the bell in the top right. These preferences control your preview inbox.</p></div>`);
   if(section==='discovery')content=settingsForm(section,`<fieldset class="genre-preferences"><legend>What do you like to play?</legend><p>Pick a few genres. Your favorites also help shape your recommendations.</p><div>${genres.map(genre=>`<label><input name="genres" type="checkbox" value="${genre}" ${state.preferredGenres.includes(genre)?'checked':''}><span>${genre}</span></label>`).join('')}</div></fieldset><div class="settings-info">${icon('explore',20)}<p>${state.hiddenGames.length} hidden games. Hidden games stay out of your recommendations.</p></div>${state.hiddenGames.length?button('reset-hidden','Restore hidden games','button small'):''}`);
   if(section==='security')content=`<section class="panel security-section"><h2>Security</h2><p class="settings-description">Your account access, in one place.</p><div class="security-row"><span>${icon('settings',22)}<span><strong>Password</strong><small>Live account authentication is not connected.</small></span></span><button class="button small" disabled>Change password</button></div><div class="security-row"><span>${icon('check',22)}<span><strong>Two-step verification</strong><small>Available when live accounts launch.</small></span></span><span class="tag">Coming later</span></div><div class="security-row"><span>${icon('profile',22)}<span><strong>Active sessions</strong><small>This preview does not create an authenticated session.</small></span></span></div></section>`;
-  if(section==='data')content=`<section class="panel"><h2>Preview data</h2><p class="settings-description">Your preview stays in this browser.</p><div class="data-summary"><div><strong>${state.favorites.length}</strong><span>Favorite games</span></div><div><strong>${state.projects.length+state.creatorAssets.length}</strong><span>Creator drafts</span></div><div><strong>${state.friends.length}</strong><span>Friends</span></div></div><p class="muted small-text">Profile details, game preferences, saved looks, and drafts are stored locally. Emails and passwords are never stored.</p><div class="reset-panel"><div><h3>Reset preview</h3><p class="muted">Restore the sample data and remove your local changes.</p></div>${button('reset-demo','Reset preview','button danger')}</div></section>`;
+  if(section==='data')content=`<section class="panel"><h2>Preview data</h2><p class="settings-description">Your preview stays in this browser.</p><div class="data-summary"><div><strong>${state.favorites.length}</strong><span>Favorite games</span></div><div><strong>${state.creatorAssets.length}</strong><span>Local assets</span></div><div><strong>${state.friends.length}</strong><span>Friends</span></div></div><p class="muted small-text">Profile details, game preferences, saved looks, and imported assets are stored locally. Emails and passwords are never stored.</p><div class="reset-panel"><div><h3>Reset preview</h3><p class="muted">Restore the sample data and remove your local changes.</p></div>${button('reset-demo','Reset preview','button danger')}</div></section>`;
   return `${pageHead('Settings','Your account. Your preferences.')}<div class="settings-layout"><nav class="settings-nav" aria-label="Settings sections">${Object.entries(settingsSections).map(([id,[label]])=>`<a href="#/settings?section=${id}" class="${section===id?'active':''}" ${section===id?'aria-current="page"':''}>${icon(id==='account'?'profile':id==='notifications'?'bell':id==='discovery'?'explore':'settings',18)}${label}</a>`).join('')}</nav><div class="settings-section-content">${content}</div></div>`;
 }
 function friends() {
@@ -318,35 +302,7 @@ function profileFriends(names, owner, mutual=[], mutualOnly=false) {
 function settingsForm(section,fields) {
   return `<form id="settings-form" class="settings-form section-settings-form" data-section="${section}"><section class="panel"><h2>${settingsSections[section][0]}</h2><p class="settings-description">${settingsSections[section][1]}</p>${fields}</section><div class="settings-save"><span class="muted small-text">Saved to this browser</span><button type="submit" class="button primary">${icon('check',17)} Save changes</button></div></form>`;
 }
-function assetIcon(type) { return icon(type==='cosmetics'?'wardrobe':type==='games'?'play':type,48); }
-function assetCard(asset,own=false) {
-  return `<article class="asset-card"><button type="button" class="asset-cover color-${asset.color||'blue'}" data-action="asset-details" data-id="${esc(asset.id)}" aria-label="View ${esc(asset.name)}">${assetIcon(asset.type)}<span>${esc(asset.subcategory||creatorTypes[asset.type])}</span></button><div class="asset-card-body"><h3>${esc(asset.name)}</h3><p>By ${esc(asset.creator||state.profile.name)}</p><div class="asset-card-footer"><strong>${asset.price?icon('alloy',14)+' '+asset.price.toLocaleString():'Free'}</strong>${own?'<span class="tag">Listing draft</span>':button('save-asset',icon('heart',15),'plain-icon',`data-id="${esc(asset.id)}" aria-label="${state.savedAssets.includes(asset.id)?'Unsave':'Save'} ${esc(asset.name)}" aria-pressed="${state.savedAssets.includes(asset.id)}"`)}</div></div></article>`;
-}
-function assetEditor(asset,type='models',listing=false) {
-  type=asset?.type||type;
-  if(!Object.hasOwn(creatorTypes,type)||type==='games')type='models';
-  const subtypes=type==='cosmetics'?cosmeticSlots:type==='models'?['Models','Meshes','Materials']:type==='audio'?['Music','Sound effects','Ambience']:['Studio tools','Utilities','Importers'];
-  const initial=asset?.subcategory||(cosmeticSlots.includes(params.get('slot'))?params.get('slot'):subtypes[0]);
-  modal(listing?'Prepare marketplace listing':asset?'Edit asset':'Create '+({models:'model',audio:'audio',plugins:'plugin',cosmetics:'cosmetic'}[type]),
-    `<form id="asset-form" data-id="${esc(asset?.id||'')}" data-type="${type}" data-listing="${listing||asset?.listing?'1':'0'}"><label for="asset-name">Asset name</label><input id="asset-name" name="name" required maxlength="60" value="${esc(asset?.name||'')}" placeholder="Give your idea a name"><label for="asset-subtype">${type==='cosmetics'?'Cosmetic category':'Asset category'}</label><select id="asset-subtype" name="subcategory">${subtypes.map(subtype=>`<option ${subtype===initial?'selected':''}>${subtype}</option>`).join('')}</select><label for="asset-description">Description</label><textarea id="asset-description" name="description" rows="3" maxlength="500" placeholder="What can other creators make with it?">${esc(asset?.description||'')}</textarea>
-    ${listing||asset?.listing?`<label for="asset-price">Price in Alloy</label><input id="asset-price" name="price" type="number" min="0" max="1000000" step="1" required value="${asset?.price||0}"><small class="field-hint">Set 0 for a free asset.</small><div class="listing-status"><span class="tag">Unpublished</span><p>This saves a listing draft. File delivery, licensing, publication, and checkout are not connected yet.</p></div>`:'<p class="fine-print">Save the asset details now. File uploads will be available with creator services.</p>'}
-    <button type="submit" class="button primary full">${listing||asset?.listing?'Save listing draft':'Save asset draft'}</button></form>`);
-}
-function marketplace() {
-  const mine=params.get('mine')==='1', saved=params.get('saved')==='1';
-  let items=mine?state.creatorAssets.filter(asset=>asset.listing).map(asset=>({...asset,creator:state.profile.name})):marketplaceAssets;
-  items=items.filter(asset=>assetMatches(asset,params)&&(!saved||state.savedAssets.includes(asset.id)));
-  const assetPage=pageWindow(items,params.get('page'));
-  return `${pageHead('Creator Marketplace','Great games start with great building blocks.',link('create?tab=models','Manage your assets '+icon('arrow',17),'button'))}
-    <section class="marketplace-hero"><div><span class="eyebrow">BY CREATORS, FOR CREATORS</span><h2>A head start on your next idea.</h2><p>Models, music, plugins, and wearables. Find the pieces that make your world yours.</p></div><div class="market-hero-art">${icon('models',62)}${icon('audio',48)}${icon('plugins',38)}</div></section>
-    <div class="marketplace-modes">${link('marketplace','Discover assets',!mine&&!saved?'selected':'')}${link('marketplace?saved=1','Saved assets'+(state.savedAssets.length?' ('+state.savedAssets.length+')':''),saved?'selected':'')}${link('marketplace?mine=1','My listing drafts',mine?'selected':'')}</div>
-    <form id="marketplace-search" class="marketplace-filters"><div class="market-search">${icon('search',18)}<input name="q" type="search" aria-label="Search assets" placeholder="Search assets" value="${esc(params.get('q')||'')}"></div><label>Category<select name="type" id="market-type"><option value="">All assets</option>${Object.entries(creatorTypes).filter(([key])=>key!=='games').map(([key,label])=>`<option value="${key}" ${params.get('type')===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Price<select name="price" id="market-price"><option value="">Any price</option><option value="free" ${params.get('price')==='free'?'selected':''}>Free</option><option value="paid" ${params.get('price')==='paid'?'selected':''}>Paid</option></select></label><button type="submit" class="button">Search</button></form>
-    ${params.get('type')==='cosmetics'?`<div class="cosmetic-slots" role="group" aria-label="Marketplace cosmetic categories">${button('market-slot','All cosmetics',!params.get('slot')?'selected':'','data-value=""')}${cosmeticSlots.map(slot=>button('market-slot',slot,params.get('slot')===slot?'selected':'',`data-value="${slot}"`)).join('')}</div>`:''}
-    <div class="section-top"><h2>${mine?'Your listing drafts':saved?'Saved assets':'Find your next building block'}</h2><span class="result-count" role="status">${items.length} asset${items.length===1?'':'s'}</span></div><div class="marketplace-grid">${assetPage.items.map(asset=>assetCard(asset,mine)).join('')}</div>
-    ${pageLinks(assetPage,'assets')}
-    ${!items.length?empty(mine?'No listing drafts yet.':saved?'Keep your favorite assets close.':'No matching assets.',mine?'Create an asset in the creator hub, then prepare its listing.':saved?'Save an asset using the heart to find it here.':'Try another search or category.',link(mine?'create?tab=models':'marketplace',mine?'Open creator hub':'Browse all assets')):''}
-    <p class="fine-print">Sample marketplace. Prices are illustrative. Checkout, asset downloads, and public sales are not available in this preview.</p>`;
-}
+function marketplace(){return creatorWorkspace.marketplacePage();}
 function preferenceEditor() {
   modal('Make discovery yours',`<p class="muted">Choose the genres you enjoy. Your favorite games help us find more, too.</p><form id="preference-form"><fieldset class="genre-preferences"><legend>Your favorite genres</legend><div>${genres.map(genre=>`<label><input type="checkbox" name="genres" value="${genre}" ${state.preferredGenres.includes(genre)?'checked':''}><span>${genre}</span></label>`).join('')}</div></fieldset><p class="fine-print">Preferences are saved in this browser.</p><button type="submit" class="button primary full">Save preferences</button></form>`);
 }
@@ -374,9 +330,9 @@ function serverEditor(gameId,existing) {
   modal(existing?'Configure your server':'Create private server',`<p class="muted">${esc(game.title)}</p><form id="server-form" data-game="${game.id}" data-id="${existing?.id||crypto.randomUUID()}" data-editing="${existing?'1':'0'}"><label for="server-name">Server name</label><input id="server-name" name="name" required maxlength="40" placeholder="Your gathering place" value="${esc(existing?.name||'')}"><fieldset class="server-visibility"><legend>Who can join?</legend><label><input type="radio" name="visibility" value="private" ${!existing||existing.visibility==='private'?'checked':''}><span><strong>Private</strong><small>Only you and the people you invite.</small></span></label><label><input type="radio" name="visibility" value="public" ${existing?.visibility==='public'?'checked':''}><span><strong>Public</strong><small>Anyone can find and join the server.</small></span></label></fieldset><div class="private-access-options" ${existing?.visibility==='public'?'hidden':''}><label class="checkbox-label"><input type="checkbox" name="allowFriends" ${existing?.allowFriends?'checked':''}> Allow all of my friends</label>${state.friends.length?`<fieldset class="server-invites"><legend>Invite specific friends</legend>${state.friends.map(name=>`<label><input type="checkbox" name="invited" value="${esc(name)}" ${existing?.invited.includes(name)?'checked':''}>${referenceAvatar(personInfo(name).avatar)}<span>${esc(name)}</span></label>`).join('')}</fieldset>`:''}</div>
     <div class="server-cost-summary"><span>${existing?'Configuration cost':'Creation cost'}</span><strong>${existing?'No additional Alloy':SERVER_PRICE+' Alloy'}</strong><span>Preview balance</span><strong>${state.previewAlloy.toLocaleString()} Alloy</strong></div><p class="fine-print">${existing?'Update your local reservation.':'Creation uses the demo Alloy balance only.'} No live server is started.</p><p class="form-error" id="server-form-error" role="alert"></p><button type="submit" class="button primary full" ${!existing&&!affordable?'disabled':''}>${existing?'Save server settings':'Create — '+SERVER_PRICE+' Alloy'}</button>${!existing&&!affordable?'<p class="form-error">Not enough preview Alloy. '+link('alloy','View Alloy store','text-link')+'</p>':''}</form>`);
 }
-function groupEmblem(group,size='') { return `<span class="group-emblem group-color-${group.color||'silver'} ${size}" aria-hidden="true">${esc(group.emblem||group.name[0].toUpperCase())}</span>`; }
+function groupEmblem(group,size='') { if(group.image)return `<span class="group-emblem group-color-${group.color||'silver'} ${size}"><img src="${esc(group.image)}" alt="${esc(group.name)} group image"></span>`;return `<span class="group-emblem group-color-${group.color||'silver'} ${size}" aria-hidden="true">${esc(group.emblem||group.name[0].toUpperCase())}</span>`; }
 function groupAction(group) {
-  if(group.mine)return button('manage-group','Manage group','button',`data-id="${group.id}"`);
+  if(groupControls.editable(group))return link('groups/'+group.id+'/manage','Manage group','button');
   if(state.groupMemberships.includes(group.id))return button('leave-group',icon('check',16)+' Leave group','button',`data-id="${group.id}"`);
   if(state.groupRequests.includes(group.id))return button('cancel-group-request','Cancel request','button',`data-id="${group.id}"`);
   return button('join-group',group.joinPolicy==='approval'?'Request to join':'Join group','button primary',`data-id="${group.id}"`);
@@ -385,16 +341,16 @@ function groupsPage() {
   const mine=params.get('tab')==='mine', query=(params.get('q')||'').trim().toLowerCase(), category=params.get('category')||'All';
   const groups=getGroups(state).filter(group=>(!mine||group.mine||state.groupMemberships.includes(group.id)||state.groupRequests.includes(group.id))&&(!query||`${group.name} ${group.description}`.toLowerCase().includes(query))&&(category==='All'||group.category===category));
   const groupPage=pageWindow(groups,params.get('page'));
-  return `${pageHead('Groups','Find your people. Build something together.',button('new-group',icon('create',17)+' Create group','button primary'))}<section class="groups-intro"><div><span class="eyebrow">A SHARED INTEREST. A SHARED WORLD.</span><h2>Good ideas grow together.</h2><p>Meet people who love what you love—or start a group and create your next game as a team.</p></div><div class="groups-intro-emblems">${getGroups(state).slice(0,3).map(group=>groupEmblem(group)).join('')}</div></section><nav class="group-browse-tabs" aria-label="Group browsing">${link('groups','Discover groups',!mine?'selected':'')}${link('groups?tab=mine','My groups',mine?'selected':'')}</nav><form id="group-search" class="group-search-form"><div class="group-search-input">${icon('search',18)}<input type="search" name="q" aria-label="Search groups" placeholder="Find a group" value="${esc(params.get('q')||'')}"></div><label>Interest<select name="category"><option value="All">All interests</option>${groupCategories.map(value=>`<option ${category===value?'selected':''}>${value}</option>`).join('')}</select></label><button type="submit" class="button">Search</button></form><div class="section-top"><h2>${mine?'Your communities':'Find a place to belong'}</h2><span class="result-count" role="status">${groups.length} group${groups.length===1?'':'s'}</span></div><div class="group-grid">${groupPage.items.map(group=>`<article class="group-card"><a href="#/groups/${group.id}" class="group-card-link">${groupEmblem(group)}<span class="group-category">${group.category}</span><h3>${esc(group.name)}</h3><p>${esc(group.description)}</p></a><div class="group-card-footer"><span>${groupMembers(group,state).length} member${groupMembers(group,state).length===1?'':'s'}</span>${link('groups/'+group.id,'View group →','text-link')}</div>${group.mine?'<span class="group-owned">Owner</span>':state.groupMemberships.includes(group.id)?'<span class="group-owned">Joined</span>':state.groupRequests.includes(group.id)?'<span class="group-owned">Request pending</span>':''}</article>`).join('')}</div>${pageLinks(groupPage,'groups')}${!groups.length?empty('Your people are out there.','Try another search, discover a group, or start your own.',button('new-group','Create a group','button primary')):''}<p class="fine-print">Sample communities and local group drafts. Membership changes stay in this browser.</p>`;
+  return `${pageHead('Groups','Find your people. Build something together.',button('new-group',icon('create',17)+' Create group','button primary'))}<section class="groups-intro"><div><span class="eyebrow">A SHARED INTEREST. A SHARED WORLD.</span><h2>Good ideas grow together.</h2><p>Meet people who love what you love—or start a group and create your next game as a team.</p></div><div class="groups-intro-emblems">${getGroups(state).slice(0,3).map(group=>groupEmblem(group)).join('')}</div></section><nav class="group-browse-tabs" aria-label="Group browsing">${link('groups','Discover groups',!mine?'selected':'')}${link('groups?tab=mine','My groups',mine?'selected':'')}</nav><form id="group-search" class="group-search-form"><div class="group-search-input">${icon('search',18)}<input type="search" name="q" aria-label="Search groups" placeholder="Find a group" value="${esc(params.get('q')||'')}"></div><label>Interest<select name="category"><option value="All">All interests</option>${groupCategories.map(value=>`<option ${category===value?'selected':''}>${value}</option>`).join('')}</select></label><button type="submit" class="button">Search</button></form><div class="section-top"><h2>${mine?'Your communities':'Find a place to belong'}</h2><span class="result-count" role="status">${groups.length} group${groups.length===1?'':'s'}</span></div><div class="group-grid">${groupPage.items.map(group=>`<article class="group-card"><a href="#/groups/${group.id}" class="group-card-link">${groupEmblem(group)}<span class="group-category">${group.category}</span><h3>${esc(group.name)}</h3><p>${esc(group.description)}</p></a><div class="group-card-footer"><span>${groupMembers(group,state).length} member${groupMembers(group,state).length===1?'':'s'}</span>${link('groups/'+group.id,'View group →','text-link')}</div>${group.mine?'<span class="group-owned">Owner</span>':state.groupMemberships.includes(group.id)?'<span class="group-owned">Joined</span>':state.groupRequests.includes(group.id)?'<span class="group-owned">Request pending</span>':''}</article>`).join('')}</div>${pageLinks(groupPage,'groups')}${!groups.length?empty('Your people are out there.','Try another search, discover a group, or start your own.',button('new-group','Create a group','button primary')):''}<p class="fine-print">Sample communities and local groups. Membership changes stay in this browser.</p>`;
 }
 function groupPage() {
   const group=findGroup(state,route.split('/')[1]);if(!group)return notFound();
   const members=groupMembers(group,state), tab=['about','games','members'].includes(params.get('tab'))?params.get('tab'):'about';
-  const memberPage=pageWindow(members,params.get('memberPage')), draftPage=pageWindow(state.projects.filter(project=>project.groupId===group.id),params.get('draftPage'));
-  const published=games.filter(game=>group.games.includes(game.id)), drafts=state.projects.filter(project=>project.groupId===group.id);
-  return `${link('groups','← All groups','text-link')}<section class="group-cover group-color-${group.color}"><span>GROUP · ${group.category.toUpperCase()}</span><div>${esc(group.emblem)}</div></section><header class="group-profile-header">${groupEmblem(group,'large')}<div><h1>${esc(group.name)}</h1><p>By ${link('profile?user='+encodeURIComponent(group.owner),esc(group.owner),'text-link')} <span>· ${members.length} members</span></p></div><div>${groupAction(group)}</div></header><nav class="group-detail-tabs" aria-label="Group sections">${[['about','About'],['games','Games ('+(published.length+drafts.length)+')'],['members','Members ('+members.length+')']].map(([value,label])=>link('groups/'+group.id+(value==='about'?'':'?tab='+value),label,tab===value?'selected':'')).join('')}</nav>
-    ${tab==='about'?`<div class="group-about-layout"><section><div class="group-announcement"><span class="eyebrow">GROUP SHOUT</span><p>${esc(group.shout)}</p><span>From ${esc(group.owner)}</span></div><section class="panel group-description"><h2>About this group</h2><p>${esc(group.description)||'Tell your members what brings this group together.'}</p><div class="group-facts"><div><span>Interest</span><strong>${group.category}</strong></div><div><span>Membership</span><strong>${group.joinPolicy==='approval'?'Approval required':'Open to everyone'}</strong></div></div></section></section><aside class="panel group-build-together">${icon('create',30)}<h2>Create as a group</h2><p>Give your next game a home, with your group as its creator.</p>${group.mine?button('new-group-game','Create group game','button primary full',`data-id="${group.id}"`):'<p class="fine-print">The group owner manages game creation and publishing.</p>'}</aside></div>`:''}
-    ${tab==='games'?`<div class="section-top"><div><h2>Group games</h2><p class="section-sub">Worlds made by ${esc(group.name)}.</p></div>${group.mine?button('new-group-game','New group game','button primary small',`data-id="${group.id}"`):''}</div>${published.length?`<div class="game-grid">${published.map(card).join('')}</div>`:''}${drafts.length?`<h3 class="group-drafts-title">In development</h3><div class="group-draft-list">${draftPage.items.map(project=>`<article class="creation-row"><span>${icon('create',20)} ${esc(project.name)} <small class="tag">Draft</small></span>${button('edit-project','Edit draft','button small',`data-id="${project.id}"`)}</article>`).join('')}</div>${pageLinks(draftPage,'group drafts','draftPage')}`:''}${!published.length&&!drafts.length?empty('A blank canvas for your group.','There are no published games here yet.',group.mine?button('new-group-game','Create group game','button primary',`data-id="${group.id}"`):''):''}`:''}
+  const memberPage=pageWindow(members,params.get('memberPage'));
+  const published=games.filter(game=>group.games.includes(game.id));
+  return `${link('groups','← All groups','text-link')}<section class="group-cover group-color-${group.color}"><span>GROUP · ${group.category.toUpperCase()}</span><div>${esc(group.emblem)}</div></section><header class="group-profile-header">${groupEmblem(group,'large')}<div><h1>${esc(group.name)}</h1><p>By ${link('profile?user='+encodeURIComponent(group.owner),esc(group.owner),'text-link')} <span>· ${members.length} members</span></p></div><div>${groupAction(group)}</div></header><nav class="group-detail-tabs" aria-label="Group sections">${[['about','About'],['games','Games ('+(published.length)+')'],['members','Members ('+members.length+')']].map(([value,label])=>link('groups/'+group.id+(value==='about'?'':'?tab='+value),label,tab===value?'selected':'')).join('')}</nav>
+    ${tab==='about'?`<div class="group-about-layout"><section><div class="group-announcement"><span class="eyebrow">GROUP SHOUT</span><p>${esc(group.shout)}</p><span>From ${esc(group.shoutBy||group.owner)}</span></div><section class="panel group-description"><h2>About this group</h2><p>${esc(group.description)||'Tell your members what brings this group together.'}</p><div class="group-facts"><div><span>Interest</span><strong>${group.category}</strong></div><div><span>Membership</span><strong>${group.joinPolicy==='approval'?'Approval required':'Open to everyone'}</strong></div></div></section></section><aside class="panel group-build-together">${icon('create',30)}<h2>Create as a group</h2><p>Give your next game a home, with your group as its creator.</p>${canGroup(group,state.profile.name,'createGames')?link('create?tab=templates&group='+group.id,'Choose a game template','button primary full'):'<p class="fine-print">Your role needs permission to create group games.</p>'}</aside></div>`:''}
+    ${tab==='games'?`<div class="section-top"><div><h2>Group games</h2><p class="section-sub">Worlds made by ${esc(group.name)}.</p></div>${canGroup(group,state.profile.name,'createGames')?link('create?tab=templates&group='+group.id,'Choose a template','button small'):''}</div>${published.length?`<div class="game-grid">${published.map(card).join('')}</div>`:empty('No published games yet.','Start with a local template and build your game in Studio.')}`:''}
     ${tab==='members'?`<div class="section-top"><h2>Members</h2><span class="muted small-text">Community roles</span></div><div class="group-member-grid">${memberPage.items.map(name=>`<a class="group-member-card" href="#/profile?user=${encodeURIComponent(name)}">${name===state.profile.name?avatar():referenceAvatar(personInfo(name).avatar)}<strong>${esc(name)}</strong><span>${esc(groupRole(group,name))}</span></a>`).join('')}</div>${pageLinks(memberPage,'group members','memberPage')}`:''}<p class="fine-print">${group.mine?'Your group is a browser-local preview. Live collaboration and publishing are not connected.':'Sample group. Joining or requesting membership does not send a message to real people.'}</p>`;
 }
 function groupEditor(existing) {
@@ -417,6 +373,9 @@ function restoreFocus(identity) {
   if(target&&!target.disabled)target.focus({preventScroll:true});
   else document.querySelector('#main')?.focus({preventScroll:true});
 }
+const workspaceContext={state:()=>state,params:()=>params,route:()=>route,icon,link,button,pageHead,pageLinks,empty,notFound,modal,dialog,navigate,render,persist,toast,groupEmblem,save:()=>saveState(storage,state)};
+const creatorWorkspace=createCreatorWorkspace(workspaceContext);
+const groupControls=createGroupControls(workspaceContext);
 function render(preserveFocus=true) {
   closeFriendPreview();
   const focus=preserveFocus?focusIdentity():null;
@@ -424,13 +383,14 @@ function render(preserveFocus=true) {
   ({route,params,category,sort,friendTab}=readRoute(location.hash));
   ensureCatalogData();
   const pages={'':landing,home,explore,search:searchPage,login:auth,signup:auth,download,wardrobe,create,alloy,profile,settings,friends,marketplace,groups:groupsPage,docs:()=>documentationPage(route,params)};
-  const page=Object.hasOwn(pages,route)?pages[route]:/^game\/[\w-]+$/.test(route)?gamePage:route.startsWith('groups/')?groupPage:route.startsWith('docs/')?()=>documentationPage(route,params):notFound;
+  const page=Object.hasOwn(pages,route)?pages[route]:/^game\/[\w-]+$/.test(route)?gamePage:/^assets\/[\w-]+$/.test(route)?()=>creatorWorkspace.assetPage(route.split('/')[1]):/^groups\/[\w-]+\/manage$/.test(route)?groupControls.controlPage:route.startsWith('groups/')?groupPage:route.startsWith('docs/')?()=>documentationPage(route,params):notFound;
   const titles={'':'A world of possibilities',home:'Home',explore:'Explore',search:'Search',signup:'Sign up',login:'Log in',download:'Download',wardrobe:'Wardrobe',create:'Creator hub',alloy:'Buy Alloy',profile:'Profile',settings:'Settings',friends:'Friends',marketplace:'Creator Marketplace',groups:'Groups',docs:'Documentation'};
   const game=route.startsWith('game/')?catalog.peek(route.split('/')[1]):null;
-  document.title=`${(route.startsWith('docs/')?docArticles.find(article=>article.id===route.slice(5))?.title:null) || (route.startsWith('groups/')?findGroup(state,route.split('/')[1])?.name:null) || game?.title || (Object.hasOwn(titles,route)?titles[route]:'Page not found')} | Metallic`;
+  document.title=`${(route.startsWith('assets/')?assetById(state,route.split('/')[1])?.name:null) || (route.startsWith('docs/')?docArticles.find(article=>article.id===route.slice(5))?.title:null) || (route.startsWith('groups/')?findGroup(state,route.split('/')[1])?.name:null) || game?.title || (Object.hasOwn(titles,route)?titles[route]:'Page not found')} | Metallic`;
   document.body.classList.remove('nav-open');
   notificationsOpen=false;
   app.innerHTML=shell(page(),['','login','signup'].includes(route));
+  creatorWorkspace.mountPreviews();
   if(route==='settings')settingsDirty=false;
   updateShelfControls();
   if(editing&&document.querySelector('#site-search'))document.querySelector('#site-search').value=editing.value;
@@ -442,7 +402,7 @@ function navigate(destination) {
 function setQuery(changes) {
   // The URL updates before hashchange fires; use it so rapid edits cannot lose filters.
   const current=readRoute(location.hash);
-  if(!Object.keys(changes).every(key=>['page','friendPage','groupPage','memberPage','assetPage','draftPage','profileGroupPage','favoritePage','creationPage'].includes(key)))changes={page:null,friendPage:null,groupPage:null,memberPage:null,assetPage:null,draftPage:null,...changes};
+  if(!Object.keys(changes).every(key=>['page','friendPage','groupPage','memberPage','assetPage','profileGroupPage','favoritePage','creationPage'].includes(key)))changes={page:null,friendPage:null,groupPage:null,memberPage:null,assetPage:null,...changes};
   navigate(routeWithParams(current.route,current.params,changes));
 }
 function setMenu(open) {
@@ -520,9 +480,6 @@ function scheduleFriendClose(related) {
   if(related&&(activeFriendTrigger?.contains(related)||menu?.contains(related)))return;
   clearTimeout(friendCloseTimer);friendCloseTimer=setTimeout(closeFriendPreview,140);
 }
-function projectEditor(project,groupId='',initialTemplate='') {
-  modal(project?'Edit game':'Create a game',`<p class="muted">${project?'Shape your idea before you start building.':'Every great world starts with an idea.'}</p><form id="project-form" data-id="${esc(project?.id||'')}"><label for="project-name">Game name</label><input id="project-name" name="name" required maxlength="60" value="${esc(project?.name||'')}" placeholder="My first world"><label for="project-owner">Creator</label><select id="project-owner" name="groupId"><option value="">${esc(state.profile.name)} · Personal game</option>${state.myGroups.map(group=>`<option value="${group.id}" ${(project?.groupId||groupId)===group.id?'selected':''}>${esc(group.name)} · Group game</option>`).join('')}</select><label for="project-template">Starting template</label><select id="project-template" name="template">${templates.map(t=>`<option ${(project?.template||initialTemplate)===t?'selected':''}>${t}</option>`).join('')}</select><label for="project-description">Description</label><textarea id="project-description" name="description" maxlength="500" rows="3" placeholder="What will players discover?">${esc(project?.description||'')}</textarea><p class="fine-print">Saved as a local draft. Studio editing and publishing are coming later.</p><button class="button primary full" type="submit">${project?'Save draft':'Create draft'} ${icon('arrow',17)}</button></form>`);
-}
 const scrollPositions=new Map();
 let lastHash=location.hash;
 window.addEventListener('hashchange',()=>{
@@ -535,12 +492,12 @@ window.addEventListener('hashchange',()=>{
     return;
   }
   const samePage=next.route===previous.route && next.params.get('user')===previous.params.get('user');
-  const paging=['page','friendPage','profileGroupPage','favoritePage','creationPage','memberPage','draftPage'].some(key=>next.params.get(key)!==previous.params.get(key));
+  const paging=['page','friendPage','profileGroupPage','favoritePage','creationPage','memberPage'].some(key=>next.params.get(key)!==previous.params.get(key));
   const previousScroll=scrollY, previousFocus=samePage?focusIdentity():null;
   scrollPositions.set(lastHash,previousScroll);lastHash=location.hash;
   if(dialog.open)dialog.close();
   render(false);
-  if(paging){const target=document.querySelector('#browse-games,.site-search-section,.profile-friends,.creator-draft-grid,.group-draft-list,.friend-grid,.group-grid,.marketplace-grid');target?.scrollIntoView({block:'start'});document.querySelector('#main').focus({preventScroll:true});}
+  if(paging){const target=document.querySelector('#browse-games,.site-search-section,.profile-friends,.marketplace-grid,.friend-grid,.group-grid,.marketplace-grid');target?.scrollIntoView({block:'start'});document.querySelector('#main').focus({preventScroll:true});}
   else window.scrollTo(0,samePage?previousScroll:(scrollPositions.get(lastHash)||0));
   if(samePage&&!paging)restoreFocus(previousFocus);else document.querySelector('#main').focus({preventScroll:true});
 });
@@ -559,11 +516,12 @@ document.addEventListener('click',async e=>{
   }
   const el=e.target.closest('[data-action]');if(!el)return;
   const {action,value,id,name}=el.dataset;
+  if(await creatorWorkspace.handleAction(action,el))return;
+  if(groupControls.handleAction(action,el))return;
   switch(action){
     case 'theme-mode':if(['dark','light','system'].includes(value))setAppearance({mode:value});break;
     case 'theme-accent':setAppearance({accent:value});break;
     case 'theme-reset':setAppearance(defaultAppearance);break;
-    case 'template-project':if(templates.includes(value))projectEditor(null,'',value);break;
     case 'doc-anchor':{const heading=document.getElementById(el.dataset.target)?.querySelector('h2');heading?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});heading?.focus({preventScroll:true});break;}
     case 'copy-doc-code':{const code=document.getElementById(el.dataset.target)?.textContent;if(code)try{await navigator.clipboard.writeText(code);el.textContent='Copied';toast('Code copied.');}catch{toast('Clipboard is unavailable. Select the code to copy it.');}break;}
     case 'retry-catalog':catalog.clear();routeData.key='';render();break;
@@ -579,11 +537,6 @@ document.addEventListener('click',async e=>{
     case 'hide-game':if(games.some(game=>game.id===id)){if(!state.hiddenGames.includes(id))state.hiddenGames.push(id);persist('We’ll recommend other games.');render();}break;
     case 'reset-hidden':state.hiddenGames=[];persist('Hidden games restored to discovery.');render();break;
     case 'toggle-filters':{const panel=el.closest('.explore-filters');const open=panel.classList.toggle('filters-open');el.setAttribute('aria-expanded',String(open));break;}
-    case 'new-asset':assetEditor(null,value);break;
-    case 'edit-asset':case 'prepare-listing':{const asset=state.creatorAssets.find(asset=>asset.id===id);if(asset)assetEditor(asset,asset.type,action==='prepare-listing');break;}
-    case 'market-slot':setQuery({slot:value||null});break;
-    case 'save-asset':if(marketplaceAssets.some(asset=>asset.id===id)){state.savedAssets=state.savedAssets.includes(id)?state.savedAssets.filter(value=>value!==id):[...state.savedAssets,id];persist(state.savedAssets.includes(id)?'Asset saved.':'Asset removed from saved items.');render();}break;
-    case 'asset-details':{const asset=marketplaceAssets.find(asset=>asset.id===id)||state.creatorAssets.find(asset=>asset.id===id);if(!asset)break;const own=state.creatorAssets.some(item=>item.id===id);modal(esc(asset.name),`<div class="asset-detail-art color-${asset.color||'blue'}">${assetIcon(asset.type)}</div><p class="muted">${esc(creatorTypes[asset.type])} · ${esc(asset.subcategory)}</p><p>${esc(asset.description)||'No description yet.'}</p><div class="asset-detail-price"><strong>${asset.price?asset.price.toLocaleString()+' Alloy':'Free'}</strong><span class="tag">${own?'Unpublished listing':'Sample listing'}</span></div><p class="fine-print">Asset files, license terms, and checkout will be available when the marketplace launches.</p>${own?button('prepare-listing','Edit listing','button primary full',`data-id="${esc(id)}"`):'<button class="button primary full" disabled>Checkout coming later</button>'}`);break;}
     case 'scroll':{const shelf=document.getElementById(el.dataset.target);shelf.scrollBy({left:Number(el.dataset.direction)*Math.max(240,shelf.clientWidth*.8),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});break;}
     case 'dismiss-launcher':state.launcherDismissed=true;persist('Launcher notice hidden. Downloads are always in the menu.');render();break;
     case 'category':setQuery({category:value==='All'?null:value});break;
@@ -595,13 +548,12 @@ document.addEventListener('click',async e=>{
     case 'recovery':modal('Account recovery',`<p class="muted">Account recovery will be available when live accounts launch. Preview logins do not create an account or store a password.</p>${link('home','Explore the preview','button primary full')}`);break;
     case 'platform':platform=value;render();break;
     case 'wardrobe-tab':wardrobeTab=value;render();break;
-    case 'outfit':if(outfits.includes(value))draftOutfit=value;render();break;
-    case 'accessory':if(accessories.includes(value))draftAccessory=value;render();break;
-    case 'color':if(colors.some(c=>c.value===value))draftColor=value;render();break;
+    case 'outfit':if(outfits.includes(value))selectedOutfit=value;render();break;
+    case 'accessory':if(accessories.includes(value))selectedAccessory=value;render();break;
+    case 'color':if(colors.some(c=>c.value===value))selectedColor=value;render();break;
     case 'rotate-avatar':avatarBack=!avatarBack;render();break;
-    case 'save-outfit':state.outfit=draftOutfit;state.color=draftColor;state.accessory=draftAccessory;persist('Look saved. Your profile is up to date.');render();break;
-    case 'reset-outfit':draftOutfit=state.outfit;draftColor=state.color;draftAccessory=state.accessory;render();toast('Restored your saved look.');break;
-    case 'new-project':projectEditor();break;
+    case 'save-outfit':state.outfit=selectedOutfit;state.color=selectedColor;state.accessory=selectedAccessory;persist('Look saved. Your profile is up to date.');render();break;
+    case 'reset-outfit':selectedOutfit=state.outfit;selectedColor=state.color;selectedAccessory=state.accessory;render();toast('Restored your saved look.');break;
     case 'create-server':serverEditor(id);break;
     case 'manage-server':{const server=state.reservedServers.find(server=>server.id===id);if(server)serverEditor(server.gameId,server);break;}
     case 'join-server':{
@@ -617,15 +569,10 @@ document.addEventListener('click',async e=>{
       closeFriendPreview();previewServerJoin(server,name);break;
     }
     case 'new-group':groupEditor();break;
-    case 'manage-group':{const group=state.myGroups.find(group=>group.id===id);if(group)groupEditor(group);break;}
-    case 'new-group-game':{const group=findGroup(state,id);if(group?.mine)projectEditor(null,id);break;}
     case 'join-group':case 'leave-group':case 'cancel-group-request':{
       const group=findGroup(state,id), actionName=action==='join-group'?'join':action==='leave-group'?'leave':'cancel';
       if(updateGroupMembership(state,group,actionName)){persist(actionName==='join'?(group.joinPolicy==='approval'?'Preview join request saved.':'You joined the group preview.'):actionName==='leave'?'You left the group preview.':'Preview join request canceled.');render();}break;
     }
-    case 'edit-project':case 'project-details':{const project=state.projects.find(p=>p.id===id);if(project)projectEditor(project);break;}
-    case 'delete-project':modal('Delete this draft?',`<p class="muted">This removes the draft from this browser.</p>${button('confirm-delete','Delete draft','button danger',`data-id="${esc(id)}"`)} ${button('close-dialog','Keep draft','button')}`);break;
-    case 'confirm-delete':state.projects=state.projects.filter(p=>p.id!==id);persist('Draft deleted.');dialog.close();render();break;
     case 'review-pack':{const pack=packs[Number(el.dataset.index)];if(!pack)break;modal('Your Alloy pack',`<div class="checkout-preview">${icon('alloy',48)}<h3>${pack.amount.toLocaleString()} Alloy</h3><strong>${pack.price} USD</strong></div><p class="muted">Illustrative pricing. Checkout is not available. No money will be charged and your sample balance stays the same.</p><button class="button primary full" disabled>Checkout coming soon</button>`);break;}
     case 'friend-tab':setQuery({tab:value==='all'?null:value,person:null});break;
     case 'clear-people':setQuery({person:null});break;
@@ -636,26 +583,21 @@ document.addEventListener('click',async e=>{
     }
     case 'remove-friend':modal('Remove friend?',`<p>Remove ${esc(name)} from your preview friends?</p>${button('confirm-remove','Remove friend','button danger',`data-name="${esc(name)}"`)} ${button('close-dialog','Keep friend','button')}`);break;
     case 'confirm-remove':updateFriendship(state,'remove',name);persist('Friend removed.');dialog.close();render();break;
-    case 'reset-demo':modal('Reset this preview?',`<p class="muted">Your favorites, outfits, profile changes, and local drafts will be removed.</p>${button('confirm-reset','Reset preview','button danger')} ${button('close-dialog','Keep my data','button')}`);break;
-    case 'confirm-reset':state=loadState({getItem:()=>null});draftOutfit=state.outfit;draftColor=state.color;draftAccessory=state.accessory;settingsDirty=false;persist('Preview reset.');dialog.close();render();break;
+    case 'reset-demo':modal('Reset this preview?',`<p class="muted">Your favorites, outfits, profile changes, imported files, and local groups will be removed.</p>${button('confirm-reset','Reset preview','button danger')} ${button('close-dialog','Keep my data','button')}`);break;
+    case 'confirm-reset':try{await clearFiles();}catch{toast('Could not clear local files. Try again.');break;}state=loadState({getItem:()=>null});selectedOutfit=state.outfit;selectedColor=state.color;selectedAccessory=state.accessory;settingsDirty=false;persist('Preview reset.');dialog.close();render();break;
   }
 });
-document.addEventListener('submit',e=>{
+document.addEventListener('submit',async e=>{
   const form=e.target;
-  if(!['docs-search-form','search-form','friend-search','auth-form','project-form','settings-form','asset-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id))return;
+  if(!['docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
   e.preventDefault();if(!form.reportValidity())return;
   const data=new FormData(form);
   if(form.id==='docs-search-form'){navigate('/docs'+(data.get('q').trim()?'?q='+encodeURIComponent(data.get('q').trim()):''));return;}
   if(form.id==='search-form'){closeSuggestions();navigate(routeWithParams('search',new URLSearchParams(),{q:data.get('q').trim()}));}
   if(form.id==='friend-search')setQuery({person:data.get('person').trim()});
   if(form.id==='auth-form'){if(route==='signup')state.profile.name=data.get('username');form.reset();persist('Welcome to the preview. No live account was created.');navigate('/home');}
-  if(form.id==='project-form'){
-    const name=data.get('name').trim();if(!name){document.querySelector('#project-name').setCustomValidity('Enter a name, not just spaces.');form.reportValidity();return;}
-    const id=form.dataset.id;const existing=state.projects.find(p=>p.id===id);
-    const project={id:existing?.id||crypto.randomUUID(),name,template:data.get('template'),description:data.get('description').trim(),groupId:state.myGroups.some(group=>group.id===data.get('groupId'))?data.get('groupId'):''};
-    if(existing)Object.assign(existing,project);else if(state.projects.length<100)state.projects.push(project);else{toast('The preview supports up to 100 local drafts.');return;}
-    persist(existing?'Draft updated.':'Your game draft is ready.');dialog.close();if(project.groupId&&route.startsWith('groups/'))navigate('/groups/'+project.groupId+'?tab=games');else render();
-  }
+  if(form.id==='creator-upload-form'){await creatorWorkspace.importAsset(form);return;}
+  if(['group-profile-form','group-shout-form','group-role-form','group-add-member-form'].includes(form.id)||form.dataset.groupMember){await groupControls.submit(form);return;}
   if(form.id==='settings-form'){
     const section=form.dataset.section;
     if(section==='account'){state.profile.name=data.get('name');state.profile.bio=data.get('bio').trim();}
@@ -670,13 +612,6 @@ document.addEventListener('submit',e=>{
     changes.unplayed=data.has('unplayed')?'1':null;setQuery(changes);
   }
   if(form.id==='marketplace-search')setQuery({q:data.get('q').trim()||null,type:data.get('type')||null,price:data.get('price')||null,slot:null});
-  if(form.id==='asset-form'){
-    const name=data.get('name').trim();if(!name){document.querySelector('#asset-name').setCustomValidity('Enter an asset name.');form.reportValidity();return;}
-    const existing=state.creatorAssets.find(asset=>asset.id===form.dataset.id);
-    const asset={id:existing?.id||crypto.randomUUID(),name,type:form.dataset.type,subcategory:data.get('subcategory'),description:data.get('description').trim(),price:Number(data.get('price')||existing?.price||0),listing:form.dataset.listing==='1'};
-    if(existing)Object.assign(existing,asset);else if(state.creatorAssets.length<100)state.creatorAssets.push(asset);else{toast('This preview supports up to 100 asset drafts.');return;}
-    persist(asset.listing?'Listing draft saved. It is not published.':'Asset draft saved.');dialog.close();render();
-  }
   if(form.id==='server-form'){
     const name=data.get('name').trim(), visibility=data.get('visibility');
     if(!name||name.length>40){document.querySelector('#server-name').setCustomValidity('Enter a name of 1–40 characters.');form.reportValidity();return;}
@@ -705,10 +640,11 @@ document.addEventListener('submit',e=>{
 });
 document.addEventListener('input',e=>{
   if(e.target.id==='site-search')suggestSearch(e.target.value);
-  if(['project-name','asset-name','server-name','group-name'].includes(e.target.id))e.target.setCustomValidity('');
+  if(['server-name','group-name'].includes(e.target.id))e.target.setCustomValidity('');
   if(e.target.closest('#settings-form')){settingsDirty=true;document.querySelector('.settings-save .muted').textContent='Unsaved changes';}
 });
 document.addEventListener('change',e=>{
+  creatorWorkspace.change(e);groupControls.change(e);
   if(e.target.id==='theme-text-size'){setAppearance({textSize:e.target.value});return;}
   if(e.target.id==='theme-contrast'){setAppearance({contrast:e.target.checked});return;}
   if(e.target.id==='sort')setQuery({sort:e.target.value==='recommended'?null:e.target.value});

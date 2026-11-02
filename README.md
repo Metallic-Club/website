@@ -31,7 +31,7 @@ Documentation is available at `#/docs`, with getting-started guides, three tutor
 
 - Game search with keyboard-accessible suggestions, URL-backed genre filters and sorting, detailed game pages, share links, and persistent favorites.
 - Outfit, accessory, and color selection with front/back previews, unsaved-change indicators, and saved looks reflected in the header and profile.
-- Local game drafts with editable names, templates, descriptions, and deletion confirmation.
+- Default starter templates, custom device-local templates, an asset library, and file/folder imports with drag-and-drop support.
 - Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
 - Validated signup/login preview forms and accessible pack-preview dialogs.
@@ -47,7 +47,7 @@ Explore filters and friend tabs survive reloads and can be bookmarked. For examp
 - Friend presence uses gray for offline/hidden, blue for online, green for playing, and orange for Studio across Home, Friends, and profile friend lists. Status labels are available on hover and to assistive technology.
 - Square profile group and badge tiles fit desktop and mobile layouts. The mutual-friend summary uses a text link above the friend list.
 - Profile groups display membership roles and a crown badge for owned groups, using the same role data as group member lists.
-- Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. A locally created group can own a game draft through the Creator field in the game editor.
+- Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. The control panel has profile/image editing, announcements, ranked roles, granular permissions, and member-role assignment. Templates and imported files stay on the device.
 
 ## Scale-aware foundation
 
