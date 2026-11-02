@@ -30,7 +30,7 @@ for(const file of files){
   const target=path.join(output,assetPath,relative);await mkdir(path.dirname(target),{recursive:true});
   if(file.endsWith('.js')){let source=await readFile(file,'utf8');source=source.replace(/(["'`])art\//g,(_,quote)=>quote+prefix+'art/');jsGzip+=gzipSync(source).length;await writeFile(target,source);}else await copyFile(file,target);
 }
-if(jsGzip>120*1024||cssGzip>40*1024)throw Error('Asset budget exceeded: JS <=120 KiB gzip, CSS <=40 KiB gzip.');
+if(jsGzip>120*1024||cssGzip>48*1024)throw Error('Asset budget exceeded: JS <=120 KiB gzip, CSS <=48 KiB gzip.');
 await writeFile(path.join(output,assetPath,'styles.css'),css);await writeFile(path.join(output,'index.html'),html);
 // Compatibility entry for browser favicon requests; normal pages use versioned artwork.
 await copyFile('public/favicon.svg',path.join(output,'favicon.svg'));

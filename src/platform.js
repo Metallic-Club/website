@@ -5,6 +5,7 @@ export const cosmeticSlots = ['Hats', 'Shirts', 'Pants', 'Shoes', 'Shoulders', '
 export const creatorTypes = { games: 'Games', models: 'Models & meshes', audio: 'Audio & music', plugins: 'Plugins', cosmetics: 'Cosmetics' };
 export const settingsSections = {
   account: ['Account', 'Your profile and account details.'],
+  themes: ['Themes', 'Appearance, accent colors, and readability.'],
   privacy: ['Privacy & safety', 'Choose how you connect with other players.'],
   notifications: ['Notifications', 'Choose what appears in your notification inbox.'],
   discovery: ['Game preferences', 'Help Metallic find games you’ll enjoy.'],

@@ -17,7 +17,7 @@ The work in this release makes browser rendering and delivery predictable as col
 | Optional catalog HTTP client | 8 s timeout, cancellation, stale-route guards, manual retry, 30 s / 20-page cache, 200 known-game records |
 | Response validation | 12 items, unique bounded IDs, safe artwork URLs, bounded text/metadata and 250 KB streamed response ceiling |
 | Static delivery | Content-versioned asset directories, one CSS request, cache policy file, lazy offscreen images |
-| Build budgets | Aggregate JS <=120 KiB gzip, combined CSS <=40 KiB gzip; enforced in CI |
+| Build budgets | Aggregate JS <=120 KiB gzip, combined CSS <=48 KiB gzip; enforced in CI. CSS allowance includes theme palettes and documentation layouts. |
 | Saved preview state | Bounded collections and 512 KB parsing ceiling; remains non-authoritative |
 
 The dependency-free browser application currently fits the budgets without adding a framework. Extract larger page modules when those budgets or measured main-thread costs warrant it. The source reference remains unchanged.
