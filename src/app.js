@@ -1,6 +1,7 @@
 import { games } from './catalog.js';
 import { searchSite } from './search.js';
 import { createInviteGate } from './beta-access.js';
+import { createBetaSession, requiresTester, testerReturnTo } from './beta-session.js';
 import { pageWindow } from './pagination.js';
 import { createLocalCatalog, createCatalogClient, metadataFor } from './catalog-service.js';
 import { presenceFor } from './presence.js';
@@ -19,6 +20,19 @@ let avatarBack = false, settingsDirty = false, notificationsOpen = false;
 const app = document.querySelector('#app');
 const dialog = document.querySelector('#dialog');
 const inviteGate=createInviteGate({endpoint:document.querySelector('meta[name="metallic-beta-api"]')?.content||''});
+const betaSession=createBetaSession({endpoint:document.querySelector('meta[name="metallic-beta-api"]')?.content||''});
+let sessionTimer, loginBusy=false, sessionBusy=false;
+function scheduleSessionCheck(){clearTimeout(sessionTimer);if(betaSession.hasAccess())sessionTimer=setTimeout(refreshSession,Math.max(0,betaSession.expiresAt()-Date.now()));}
+async function refreshSession(){
+  if(loginBusy||sessionBusy)return;
+  const wasInside=requiresTester(readRoute(location.hash).route);
+  const task=betaSession.check();
+  if(wasInside){settingsDirty=false;if(dialog.open)dialog.close();render(false);}
+  const result=await task;
+  if(result.cancelled)return;
+  scheduleSessionCheck();
+  if(result.ok){state.profile.name=betaSession.user().username;const current=readRoute(location.hash);if(current.route==='login')navigate(testerReturnTo(current.params.get('returnTo')));else render(false);}
+}
 let inviteBusy=false;
 const catalog = createCatalogClient({ local: createLocalCatalog(games, gameDetails), endpoint: document.querySelector('meta[name="metallic-catalog-api"]')?.content || '' });
 let routeData = { key: '', status: 'idle', value: null }, routeController, routeSequence = 0;
@@ -110,19 +124,19 @@ function shell(content, publicPage = false) {
   const mainNav=primary.map(([id,label])=>`<a href="#/${id}" class="${route===id?'active':''}" ${route===id?'aria-current="page"':''}>${label}</a>`).join('');
   const unread=notificationItems().filter(item=>!state.readNotifications.includes(item.id)).length;
   return `<header class="topbar">${!publicPage?button('menu',icon('menu'),'mobile-menu','aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false"'):''}${brand()}
-    <nav class="topnav" aria-label="Main navigation">${mainNav}</nav>
+    ${!publicPage?`<nav class="topnav" aria-label="Main navigation">${mainNav}</nav>`:''}
     ${!publicPage?`<form class="top-search" id="search-form" role="search">${icon('search',18)}<input id="site-search" name="q" type="search" placeholder="Search games, people, groups" aria-label="Search games, people, and groups" value="${esc(route==='search'?params.get('q')||'':'')}" autocomplete="off" maxlength="160" aria-controls="search-suggestions" aria-expanded="false"><button class="search-submit" type="submit" aria-label="Search">${icon('arrow',16)}</button><div id="search-suggestions" hidden aria-label="Search suggestions"></div></form>
     <div class="top-actions">${button('notifications',icon('bell')+(unread?'<span class="notification-dot"></span>':''),'plain-icon','id="notification-toggle" aria-label="Notifications" aria-controls="notification-popover" aria-expanded="false"')}<a href="#/alloy" class="wallet" title="Preview Alloy balance">${icon('alloy',19)}<span>${state.previewAlloy.toLocaleString()}</span></a><a href="#/profile" class="top-profile" aria-label="View your profile">${avatar()}<span class="username">${esc(state.profile.name)}</span></a></div>`:`<div class="top-actions">${link('login','Log in','button quiet')}${link('signup','Redeem invite','button primary')}</div>`}</header>
     ${!publicPage?`<section id="notification-popover" class="notification-popover" role="region" aria-label="Notification inbox" hidden></section><button class="mobile-backdrop" data-action="menu" aria-label="Close navigation"></button>
-    <aside class="sidebar" id="sidebar"><span class="side-section-label">COMMUNITY</span><nav class="nav-group" aria-label="Community navigation">${navItem('friends','Friends')}${navItem('groups','Groups')}${navItem('marketplace','Marketplace')}</nav><span class="side-section-label">YOUR ACCOUNT</span><nav class="nav-group" aria-label="Account navigation">${navItem('alloy','Buy Alloy')}${navItem('settings','Settings')}</nav><span class="side-section-label">METALLIC</span><nav class="nav-group" aria-label="Platform tools">${navItem('download','Download')}</nav><div class="sidebar-bottom"><div class="premium-box"><div class="premium-title">${icon('download',17)} Your next adventure</div><p>Get the latest on the Metallic launcher.</p>${link('download','Launcher availability','premium-link')}</div><a class="sidebar-about" href="#/">About Metallic ${icon('arrow',14)}</a></div></aside>`:''}
-    <main id="main" tabindex="-1" class="${publicPage?'public-page':'page'}"><div class="${publicPage?'public-content':'content'}">${content}<footer class="footer"><span>© ${new Date().getFullYear()} Metallic <span class="demo-label">Closed beta · Website preview</span></span><div class="footer-links">${link('','About','')}${link('download','Download','')}${link('marketplace','Marketplace','')}${link('settings','Settings','')}</div></footer></div></main>`;
+    <aside class="sidebar" id="sidebar"><span class="side-section-label">COMMUNITY</span><nav class="nav-group" aria-label="Community navigation">${navItem('friends','Friends')}${navItem('groups','Groups')}${navItem('marketplace','Marketplace')}</nav><span class="side-section-label">YOUR ACCOUNT</span><nav class="nav-group" aria-label="Account navigation">${navItem('alloy','Buy Alloy')}${navItem('settings','Settings')}</nav><span class="side-section-label">METALLIC</span><nav class="nav-group" aria-label="Platform tools">${navItem('download','Download')}</nav><div class="sidebar-bottom"><div class="premium-box"><div class="premium-title">${icon('download',17)} Your next adventure</div><p>Get the latest on the Metallic launcher.</p>${link('download','Launcher availability','premium-link')}</div><a class="sidebar-about" href="#/">About Metallic ${icon('arrow',14)}</a>${button('logout','Log out','button small sidebar-logout')}</div></aside>`:''}
+    <main id="main" tabindex="-1" class="${publicPage?'public-page':'page'}"><div class="${publicPage?'public-content':'content'}">${content}<footer class="footer"><span>© ${new Date().getFullYear()} Metallic <span class="demo-label">Closed beta · Tester access only</span></span><div class="footer-links">${link('','About','')}${publicPage?link('login','Tester log in',''):link('download','Download','')+link('marketplace','Marketplace','')+link('settings','Settings','')}</div></footer></div></main>`;
 }
 function landing() {
-  return `<section class="landing-hero beta-landing-hero"><div class="hero-copy"><span class="beta-pill"><span class="beta-status-dot"></span> CLOSED BETA · INVITE ONLY</span><h1>A small beginning.<br>A world of possibilities.</h1><p>Metallic is a new place to play, create, and find your people. We’re still building—and opening the doors to a small group of early testers.</p><div class="button-row">${link('signup','I have an invite '+icon('arrow',18))}${link('login','Tester log in','button')}</div><small>Registration is closed to the public. An invite code is required.</small></div><div class="hero-mosaic">${[games[0],games[1],games[4],games[5]].map(g=>`<a href="#/game/${g.id}"><img src="${g.art}" alt="${esc(g.title)} concept artwork" width="360" height="360"><span>${esc(g.title)}</span></a>`).join('')}<div class="mosaic-caption">A first look at Metallic. <span>Worlds in development.</span></div></div></section>
-    <section class="beta-note"><span>${icon('create',22)}</span><div><strong>A platform in progress.</strong><p>This is an early website preview. Games, the launcher, and creator tools are still taking shape. Things will change as we build.</p></div>${link('home','Browse the preview →','text-link')}</section>
-    <section class="beta-how"><div class="beta-section-intro"><span class="eyebrow">THE FIRST CHAPTER</span><h2>Help shape what comes next.</h2><p>We’re starting small so we can learn, listen, and build a better home for players and creators.</p></div><div class="beta-steps"><article><span class="beta-step">01</span><h3>Start with an invitation</h3><p>Access is invite-only. If you have a code from the Metallic team, enter it to check your beta invitation.</p></article><article><span class="beta-step">02</span><h3>Take an early look</h3><p>Explore the website as it develops. Expect work in progress, sample worlds, and features that aren’t ready yet.</p></article><article><span class="beta-step">03</span><h3>Build the next chapter</h3><p>The beta will grow as the platform becomes ready. Avatar customization and more ways to create will follow.</p></article></div></section>
-    <section class="beta-bottom"><div><span class="eyebrow">EARLY ACCESS</span><h2>Your invitation starts here.</h2><p>Already invited? Keep your code handy. Everyone else can take a look around the website preview.</p></div><div>${link('signup','Enter invite code '+icon('arrow',17),'button primary')}${link('home','View the website preview','text-link')}</div></section>
-    <section class="beta-faq"><h2>A few things to know</h2><details><summary>Can anyone register?</summary><p>Public registration is closed. A valid invite code is required for the signup flow.</p></details><details><summary>Is Metallic ready to play?</summary><p>The platform and launcher are still in development. This website shows an early look at what we’re building.</p></details><details><summary>Where is avatar customization?</summary><p>The Wardrobe is a work in progress. Profiles use generic icons for now.</p></details></section>`;
+  return `<section class="landing-hero beta-landing-hero"><div class="hero-copy"><span class="beta-pill"><span class="beta-status-dot"></span> CLOSED BETA · INVITE ONLY</span><h1>A small beginning.<br>A world of possibilities.</h1><p>Metallic is a new place to play, create, and find your people. We’re still building—and opening the doors to a small group of early testers.</p><div class="button-row">${link('signup','I have an invite '+icon('arrow',18))}${link('login','Tester log in','button')}</div><small>Only signed-in beta testers can access the platform. New accounts require an invite code.</small></div><div class="hero-mosaic">${[games[0],games[1],games[4],games[5]].map(g=>`<div class="beta-world"><img src="${g.art}" alt="${esc(g.title)} concept artwork" width="360" height="360"><span>${esc(g.title)}</span></div>`).join('')}<div class="mosaic-caption">A first look at Metallic. <span>Worlds in development.</span></div></div></section>
+    <section class="beta-note"><span>${icon('create',22)}</span><div><strong>A platform in progress.</strong><p>This is an early website preview. Games, the launcher, and creator tools are still taking shape. Things will change as we build.</p></div>${link('login','Tester log in →','text-link')}</section>
+    <section class="beta-how"><div class="beta-section-intro"><span class="eyebrow">THE FIRST CHAPTER</span><h2>Help shape what comes next.</h2><p>We’re starting small so we can learn, listen, and build a better home for players and creators.</p></div><div class="beta-steps"><article><span class="beta-step">01</span><h3>Start with an invitation</h3><p>Access is invite-only. If you have a code from the Metallic team, enter it to check your beta invitation.</p></article><article><span class="beta-step">02</span><h3>Log in as a tester</h3><p>The platform is reserved for signed-in beta testers. Expect work in progress, sample worlds, and features that aren’t ready yet.</p></article><article><span class="beta-step">03</span><h3>Build the next chapter</h3><p>The beta will grow as the platform becomes ready. Avatar customization and more ways to create will follow.</p></article></div></section>
+    <section class="beta-bottom"><div><span class="eyebrow">EARLY ACCESS</span><h2>Your invitation starts here.</h2><p>Already a beta tester? Log in to access Metallic. New testers need an invitation before they can register.</p></div><div>${link('signup','Enter invite code '+icon('arrow',17),'button primary')}${link('login','Already a tester? Log in','text-link')}</div></section>
+    <section class="beta-faq"><h2>A few things to know</h2><details><summary>Can anyone register?</summary><p>Public registration is closed. A valid invite code is required for the signup flow. Platform pages also require a signed-in beta tester account.</p></details><details><summary>Is Metallic ready to play?</summary><p>The platform and launcher are still in development. This website shows an early look at what we’re building.</p></details><details><summary>Where is avatar customization?</summary><p>The Wardrobe is a work in progress. Profiles use generic icons for now.</p></details></section>`;
 }
 function friendStrip() {
   return `<section class="home-section friends-section"><div class="section-top"><h2>Friends <span class="muted">(${state.friends.length})</span></h2>${link('friends','See all '+icon('arrow',15),'view-all')}</div>
@@ -190,8 +204,8 @@ function remoteGamePage(game) {
 function auth() {
   const signup=route==='signup', granted=signup&&inviteGate.hasAccess();
   const inviteForm=`<div class="invite-lock">${icon('badge',19)}<span>INVITATION REQUIRED</span></div><p class="invite-intro">Metallic is in closed beta. Enter your invite code to unlock the signup preview.</p><form id="invite-form"><div class="field"><label for="invite-code">Invite code</label><input id="invite-code" name="invite" required minlength="8" maxlength="64" placeholder="Enter your invite code" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="invite-help invite-error"><small id="invite-help">Use the code provided by the Metallic team.</small></div><p id="invite-error" class="invite-error" role="alert"></p><button class="button primary full" type="submit" ${inviteBusy?'disabled':''}>${inviteBusy?'Verifying…':'Verify invite '+icon('arrow',17)}</button></form><p class="invite-no-code">No code yet? Registration is invite-only while we build the platform. New access details will be shared as the beta progresses.</p>`;
-  const accountForm=`${granted?'<div class="invite-verified">'+icon('check',17)+' Invite verified for this visit</div>':''}<form id="auth-form">${signup?`<div class="field"><label for="auth-username">Username</label><input id="auth-username" name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="Choose your username" aria-describedby="username-help"><small id="username-help">3–20 letters, numbers, or underscores.</small></div>`:''}<div class="field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div><div class="field"><label for="password">Password</label><div class="password-field"><input name="password" id="password" type="password" required minlength="8" autocomplete="${signup?'new-password':'current-password'}" placeholder="At least 8 characters" aria-describedby="password-help">${button('password','Show','password-toggle','aria-label="Show password" aria-pressed="false"')}</div><small id="password-help">Use a sample password for this preview.</small></div>${!signup?button('recovery','Forgot your password?','text-button recovery-link'):''}<div class="form-notice">Account preview only. No live account is created. Your email and password are never saved or sent.</div><button class="button primary full" type="submit">${signup?'Preview invited signup':'Preview log in'} ${icon('arrow',17)}</button></form>`;
-  return `<div class="auth-layout"><div class="auth-story"><span class="eyebrow">METALLIC · CLOSED BETA</span><h2>A small beginning.<br>A world of possibilities.</h2><img src="art/game-5.svg" alt="A Metallic world in development" width="640" height="480"><p>We’re building Metallic with a small group of early testers. Access is by invitation.</p></div><section class="auth-card"><span class="brand-glyph">M</span><h1>${signup?'Your invitation starts here.':'Welcome back, tester.'}</h1>${signup&&!granted?inviteForm:accountForm}<div class="auth-divider"><span>take a look around</span></div>${link('home','Browse the website preview','button full')}<p class="auth-switch">${signup?'Already have an account? '+link('login','Log in','text-link'):'Have an invite code? '+link('signup','Redeem it','text-link')}</p></section></div>`;
+  const accountForm=`${granted?'<div class="invite-verified">'+icon('check',17)+' Invite verified for this visit</div>':''}<form id="auth-form">${signup?`<div class="field"><label for="auth-username">Username</label><input id="auth-username" name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="Choose your username" aria-describedby="username-help"><small id="username-help">3–20 letters, numbers, or underscores.</small></div>`:''}<div class="field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div><div class="field"><label for="password">Password</label><div class="password-field"><input name="password" id="password" type="password" required minlength="8" autocomplete="${signup?'new-password':'current-password'}" placeholder="At least 8 characters" aria-describedby="password-help">${button('password','Show','password-toggle','aria-label="Show password" aria-pressed="false"')}</div><small id="password-help">${signup?'Use a sample password for this preview.':'Sign in with your invited beta tester account.'}</small></div>${!signup?button('recovery','Forgot your password?','text-button recovery-link'):''}<div class="form-notice">${signup?'Signup preview only. This does not create an account or grant platform access. Your email and password are never saved or sent.':betaSession.configured?'Platform access requires an active beta tester account.':'Tester sign-in is not connected yet. Platform access remains locked.'}</div><p id="auth-error" class="invite-error" role="alert"></p><button class="button primary full" type="submit" ${!signup&&(!betaSession.configured||loginBusy)?'disabled':''}>${signup?'Preview invited signup':loginBusy?'Signing in…':'Log in'} ${icon('arrow',17)}</button></form>`;
+  return `<div class="auth-layout"><div class="auth-story"><span class="eyebrow">METALLIC · CLOSED BETA</span><h2>A small beginning.<br>A world of possibilities.</h2><img src="art/game-5.svg" alt="A Metallic world in development" width="640" height="480"><p>We’re building Metallic with a small group of early testers. Access is by invitation.</p></div><section class="auth-card"><span class="brand-glyph">M</span><h1>${signup?'Your invitation starts here.':'Welcome back, tester.'}</h1>${signup&&!granted?inviteForm:accountForm}<p class="tester-access-note">The platform is available only to signed-in beta testers.</p><p class="auth-switch">${signup?'Already have an account? '+link('login','Log in','text-link'):'Have an invite code? '+link('signup','Redeem it','text-link')}</p></section></div>`;
 }
 function download() { return `${pageHead('The adventure starts here.','Your home for every Metallic game.')}<section class="download-hero"><div><span class="eyebrow">METALLIC LAUNCHER</span><h2>Less waiting.<br>More playing.</h2><p>One home for your games, your friends, and whatever you discover next.</p><div class="categories">${['Windows','macOS','Linux'].map(p=>button('platform',p,`cat ${platform===p?'selected':''}`,`data-value="${p}" aria-pressed="${platform===p}"`)).join('')}</div><button class="button primary download-button" disabled>${icon('download')} ${platform} release coming soon</button><p class="fine-print">The launcher is in development. An installer will appear here when an official release is available.</p></div><div class="launcher-mock"><div class="window-dots"><i></i><i></i><i></i><span>Metallic Launcher · Preview</span></div><img src="art/game-1.svg" alt="Launcher game preview"><div><strong>Your next adventure</strong><span>Cyber Raven: Neon Protocol</span><span class="launch-preview">${icon('play',15)} Jump in</span></div></div></section><div class="feature-columns download-features"><article><span class="step">01</span><h3>Get the launcher</h3><p>Download the official installer for your device when it becomes available.</p></article><article><span class="step">02</span><h3>Make yourself at home</h3><p>Sign in with your Metallic account and bring your identity with you.</p></article><article><span class="step">03</span><h3>Find your next favorite</h3><p>Explore games and jump into something new.</p></article></div><div class="panel"><h3>${platform} availability</h3><p class="muted">Release date, supported ${platform} versions, and system requirements will be confirmed with the first official launcher build.</p></div>`; }
 function wardrobe() {
@@ -399,6 +413,13 @@ function render(preserveFocus=true) {
   const focus=preserveFocus?focusIdentity():null;
   const editing=preserveFocus&&document.activeElement?.matches('#site-search')?{value:document.activeElement.value}:null;
   ({route,params,category,sort,friendTab}=readRoute(location.hash));
+  if(requiresTester(route)&&!betaSession.hasAccess()){
+    const destination=testerReturnTo(location.hash.replace(/^#/,''));
+    history.replaceState(null,'','#/login?'+new URLSearchParams({returnTo:destination}));
+    lastHash=location.hash;
+    ({route,params,category,sort,friendTab}=readRoute(location.hash));
+    settingsDirty=false;if(dialog.open)dialog.close();
+  }
   ensureCatalogData();
   const pages={'':landing,home,explore,search:searchPage,login:auth,signup:auth,download,wardrobe,create,alloy,profile,settings,friends,marketplace,groups:groupsPage};
   const page=Object.hasOwn(pages,route)?pages[route]:/^game\/[\w-]+$/.test(route)?gamePage:route.startsWith('groups/')?groupPage:notFound;
@@ -505,6 +526,7 @@ let lastHash=location.hash;
 window.addEventListener('hashchange',()=>{
   if(location.hash===lastHash)return;
   const next=readRoute(location.hash), previous=readRoute(lastHash);
+  if(requiresTester(previous.route)&&!betaSession.hasAccess())settingsDirty=false;
   if(settingsDirty && previous.route==='settings') {
     const destination=location.hash.slice(1);
     history.replaceState(null,'',lastHash);
@@ -512,6 +534,7 @@ window.addEventListener('hashchange',()=>{
     return;
   }
   if(previous.route==='signup'&&next.route!=='signup'){inviteGate.clear();inviteBusy=false;}
+  if(previous.route==='login'&&next.route!=='login'&&loginBusy){betaSession.clear();loginBusy=false;}
   const samePage=next.route===previous.route && next.params.get('user')===previous.params.get('user');
   const paging=['page','friendPage','profileGroupPage','favoritePage','creationPage','memberPage','draftPage'].some(key=>next.params.get(key)!==previous.params.get(key));
   const previousScroll=scrollY, previousFocus=samePage?focusIdentity():null;
@@ -536,8 +559,14 @@ document.addEventListener('click',async e=>{
     e.preventDefault();const destination=navigation.getAttribute('href').slice(1);setMenu(false);navigate(destination);
   }
   const el=e.target.closest('[data-action]');if(!el)return;
+  if(requiresTester(readRoute(location.hash).route)&&!betaSession.hasAccess()){render(false);return;}
   const {action,value,id,name}=el.dataset;
   switch(action){
+    case 'logout':{
+      clearTimeout(sessionTimer);settingsDirty=false;sessionBusy=true;
+      const task=betaSession.logout();if(dialog.open)dialog.close();navigate('/login');render(false);
+      const result=await task;sessionBusy=false;if(!result.ok)toast('Signed out of this view. The account service could not confirm session revocation.');break;
+    }
     case 'retry-catalog':catalog.clear();routeData.key='';render();break;
     case 'remove-filter':setQuery({[el.dataset.key]:null});break;
     case 'menu':setMenu(!document.querySelector('#sidebar').classList.contains('open'));break;
@@ -564,7 +593,7 @@ document.addEventListener('click',async e=>{
     case 'play':modal('Your next adventure is on its way',`<p class="muted">${esc(games.find(g=>g.id===id)?.title||'This game')} will open in the Metallic launcher when live gameplay is available.</p><p>This is a preview game. No game has been launched.</p>${link('download',icon('download',18)+' View launcher availability','button primary full')}`);break;
     case 'share':try{await navigator.clipboard.writeText(location.href);toast('Game link copied.');}catch{modal('Share this game',`<label for="share-url">Game link</label><input id="share-url" class="share-url" readonly value="${esc(location.href)}"><p class="fine-print">Copy this link. Viewers still need access to this private preview.</p>`);document.querySelector('#share-url').select();}break;
     case 'password':{const input=document.querySelector('#password');const show=input.type==='password';input.type=show?'text':'password';el.textContent=show?'Hide':'Show';el.setAttribute('aria-label',show?'Hide password':'Show password');el.setAttribute('aria-pressed',String(show));break;}
-    case 'recovery':modal('Account recovery',`<p class="muted">Account recovery will be available when live accounts launch. Preview logins do not create an account or store a password.</p>${link('home','Explore the preview','button primary full')}`);break;
+    case 'recovery':modal('Account recovery',`<p class="muted">Account recovery will be available through the beta account service. Contact the Metallic team if you need help with your tester account.</p>${link('login','Back to log in','button primary full')}`);break;
     case 'platform':platform=value;render();break;
     case 'wardrobe-tab':wardrobeTab=value;render();break;
     case 'outfit':if(outfits.includes(value))draftOutfit=value;render();break;
@@ -629,7 +658,21 @@ document.addEventListener('submit',async e=>{
   }
   if(form.id==='search-form'){closeSuggestions();navigate(routeWithParams('search',new URLSearchParams(),{q:data.get('q').trim()}));}
   if(form.id==='friend-search')setQuery({person:data.get('person').trim()});
-  if(form.id==='auth-form'){if(route==='signup'&&!inviteGate.hasAccess()){toast('A verified invite is required.');render();return;}if(route==='signup'){state.profile.name=data.get('username');inviteGate.clear();}form.reset();persist('Welcome to the preview. No live account was created.');navigate('/home');}
+  if(form.id==='auth-form'){
+    if(route==='signup'){
+      if(!inviteGate.hasAccess()){toast('A verified invite is required.');render();return;}
+      inviteGate.clear();form.reset();toast('Signup preview complete. An active beta tester account is still required to log in.');navigate('/login');return;
+    }
+    if(route!=='login'||loginBusy)return;
+    loginBusy=true;const submit=form.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Signing in…';
+    const result=await betaSession.login(data.get('email'),data.get('password'));
+    form.reset();if(!form.isConnected||route!=='login')return;
+    loginBusy=false;
+    if(result.ok){state.profile.name=betaSession.user().username;scheduleSessionCheck();navigate(testerReturnTo(params.get('returnTo')));return;}
+    document.querySelector('#auth-error').textContent=result.message||'Unable to verify beta access. Please try again.';
+    submit.disabled=!betaSession.configured;submit.textContent='Log in';return;
+  }
+  if(!betaSession.hasAccess()){render(false);return;}
   if(form.id==='project-form'){
     const name=data.get('name').trim();if(!name){document.querySelector('#project-name').setCustomValidity('Enter a name, not just spaces.');form.reportValidity();return;}
     const id=form.dataset.id;const existing=state.projects.find(p=>p.id===id);
@@ -720,4 +763,8 @@ document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement&&!
 document.addEventListener('scroll',e=>{if(!e.target.closest?.('#friend-activity-popover'))closeFriendPreview();if(e.target.classList?.contains('card-scroller'))updateShelfControls();},true);
 window.addEventListener('resize',()=>{closeFriendPreview();if(innerWidth>820&&document.body.classList.contains('nav-open'))setMenu(false);updateShelfControls();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const rect=dialog.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)dialog.close();}});
+window.addEventListener('focus',()=>{if(!loginBusy)refreshSession();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!loginBusy)refreshSession();});
+window.addEventListener('pageshow',event=>{if(event.persisted)refreshSession();});
 render();
+refreshSession();

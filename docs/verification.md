@@ -4,7 +4,7 @@ Reviewed November 1, 2026. The supplied Metallic reference remains the basis of 
 
 ## Automated verification
 
-`npm test` covers 42 checks:
+`npm test` covers 48 checks:
 
 - Standalone SVG XML casing and internal paint references.
 - Global games/people/groups search, including custom groups, own profile, deduplication, and empty queries.
@@ -41,7 +41,7 @@ Exercised in the browser:
 - Friend request creation, pending state, persistence, cancellation, and profile navigation.
 - Creator draft creation, editing, and reload persistence.
 - Mobile drawer navigation and protection of unsaved settings.
-- Signup preview validation, password visibility, guest access, and recovery information.
+- Signup preview validation, password visibility, and recovery information. Guest platform access is now removed.
 - Play-preview and Alloy-pack dialogs, including disabled checkout.
 
 ## Integration limits
@@ -89,3 +89,5 @@ The pre-change branch codex/backup-pre-closed-beta was pushed and an offline Git
 The invite gate stays closed without an endpoint, on invalid/expired/malformed/rate-limited responses, and after cancellation. A local API fixture verified both the locked path and a successful short-lived verification; navigation clears access. Direct signup URLs, including invite query parameters, do not unlock signup. No real accounts or invitations were created.
 
 Landing, login, invite access, Wardrobe, Home and profiles were checked at 320, 390, 768 and 1024 pixels without horizontal overflow. Generic icons were checked on Home, profiles, Friends, server lists, group members and people search.
+
+The tester-only revision removes public platform navigation, game-art links and guest browsing. Direct Home, Explore, game, profile, group, download, settings and unknown routes redirect to login without rendering private-page UI. Default login is disabled because no authentication service is configured. A local session fixture verified rejection of non-beta accounts, authenticated return URLs with filters, cookie-backed restoration after reload, and logout followed by denied Home access. No live credentials or accounts were used. Six session/access tests cover default denial, membership, expiry, malformed responses, failures, cancellation, logout and internal return URLs. Static sample assets are not confidential; authoritative API authorization still belongs to the backend.

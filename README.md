@@ -26,7 +26,7 @@ Landing `/`, login `/login`, signup `/signup`, launcher `/download`, home `/home
 - Local game drafts with editable names, templates, descriptions, and deletion confirmation.
 - Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
-- Invite-gated signup with server verification, short-lived in-memory access and a fail-closed default. Login and verified signup remain account previews. Accessible pack-preview dialogs remain available.
+- Invite-gated signup with server verification, short-lived in-memory access and a fail-closed default. All platform routes require a server-verified beta tester session; sample login credentials never grant access. Invited signup remains a preview until registration is connected. Accessible pack-preview dialogs remain available.
 - Four primary top tabs, a supplementary sidebar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
 - Unsaved settings protection and normalization of previously saved browser data.
 
@@ -51,7 +51,7 @@ See [the scaling design](docs/scaling.md) for the API contract, implemented limi
 
 ## Closed beta and backups
 
-The landing page presents Metallic as an invite-only closed beta. Public signup fields are hidden until a configured invite service validates a code. Without that backend, registration stays closed; there are no valid codes embedded in the frontend. Set the public build value METALLIC_BETA_API when a trusted HTTPS verifier is ready. See [closed-beta.md](docs/closed-beta.md) for the endpoint contract and account-service requirements.
+The landing page presents Metallic as an invite-only closed beta. Public signup fields are hidden until a configured invite service validates a code. Only the landing, login and invite pages are public. Without the authentication backend, platform access and registration stay closed; there are no valid codes embedded in the frontend. Set the public build value METALLIC_BETA_API when a trusted HTTPS verifier is ready. See [closed-beta.md](docs/closed-beta.md) for the endpoint contract and account-service requirements.
 
 The pre-beta source is preserved on codex/backup-pre-closed-beta at f41a0ff69a87535bf702846a1cdb87a8bbefe5ca. The beta changes are maintained on codex/closed-beta. An offline Git bundle was also created and verified outside this checkout.
 
