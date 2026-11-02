@@ -1,7 +1,7 @@
-name: Build and deploy Metallic to Pages
+name: Build and deploy Metallic previews to Pages
 on:
   push:
-    branches: [main]
+    branches: [main, codex/early-release-preview]
   workflow_dispatch:
   workflow_call:
 permissions:
@@ -19,17 +19,29 @@ jobs:
       pages_ready: ${{ steps.pages-config.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm test
       - run: npm run benchmark
-      - run: npm run build
+      - name: Check out early-release preview
+        uses: actions/checkout@v4
+        with:
+          ref: codex/early-release-preview
+          path: .local/early-release-source
+      - name: Check early-release version
+        working-directory: .local/early-release-source
+        run: npm test
+      - name: Build both browser previews
+        run: node scripts/build-previews.mjs --early .local/early-release-source
       - name: Retain checked website artifact
         uses: actions/upload-artifact@v4
         with:
           name: metallic-pages-build
-          path: dist/
+          path: .local/github-pages/
+          include-hidden-files: true
       - name: Check optional Pages configuration
         id: pages-config
         env:
@@ -50,7 +62,7 @@ jobs:
         if: steps.pages-config.outputs.ready == 'true'
         uses: actions/upload-pages-artifact@v5
         with:
-          path: dist/
+          path: .local/github-pages/
   deploy:
     if: needs.build.outputs.pages_ready == 'true'
     needs: build
