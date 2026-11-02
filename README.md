@@ -83,3 +83,5 @@ The preview server listens only on loopback and serves application assets. Repos
 See [the verification record](docs/verification.md) for the latest review coverage.
 
 Keep authentication, user data, wallet operations, and creator publishing behind service adapters when connecting a backend; do not treat localStorage as an authority for any live account or purchase.
+
+GitHub Pages uses the checked production build in .github/workflows/static.yml and uploads only dist/. The previous Jekyll workflow remains as a manual compatibility entry that delegates to that same pipeline, avoiding competing automatic deployments.

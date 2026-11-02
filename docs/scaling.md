@@ -69,3 +69,5 @@ Those measurements do not model millions of connected players. Before a live lau
 - [MDN HTTP caching](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching): versioned URLs and immutable caching.
 - [web.dev image loading](https://web.dev/articles/browser-level-image-lazy-loading): offscreen lazy loading and reserved image dimensions.
 - [PostgreSQL indexes](https://www.postgresql.org/docs/current/indexes.html): choose and verify indexes for real access patterns.
+
+GitHub Pages publishes only dist/ after tests, the benchmark and budget checks. Its automatic deployment is consolidated in static.yml; the retained Jekyll-named entry delegates manually to the same reusable workflow. See [GitHub custom Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
