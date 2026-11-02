@@ -21,6 +21,12 @@ Open http://127.0.0.1:4173. The production build is in `dist/`; `node scripts/se
 
 Landing `/`, login `/login`, signup `/signup`, launcher `/download`, home `/home`, explore `/explore`, wardrobe `/wardrobe`, creator hub `/create`, Alloy store `/alloy`, profile `/profile`, settings `/settings`, friends `/friends`, and game details `/game/:id`. Browser paths use `#/` before each route.
 
+## Design, themes and creator documentation
+
+Orange is the default accent. Settings → Themes offers dark, light and system appearance, five accent colors, large text and stronger contrast. Preferences use their own local storage key and do not affect account access. The visual refresh improves typography, mobile navigation and the creator starting flow. Sample game covers are original concept illustrations, not gameplay screenshots.
+
+Documentation is available at `#/docs`, with getting-started guides, three tutorials and a proposed Luau-style API reference. Search, chapter links and code copying work in the preview. Engine-specific examples are clearly labeled API design proposals; Studio and a runnable Metallic SDK are not available. The beta retains its login gate. Use the browsable preview to review every page.
+
 ## Working interactions
 
 - Game search with keyboard-accessible suggestions, URL-backed genre filters and sorting, detailed game pages, share links, and persistent favorites.

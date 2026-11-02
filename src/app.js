@@ -1,3 +1,5 @@
+import {loadAppearance,saveAppearance,applyAppearance,normalizeAppearance,defaultAppearance,themesPage} from './themes.js';
+import {documentationPage,docArticles} from './documentation.js';
 import { games } from './catalog.js';
 import { searchSite } from './search.js';
 import { createInviteGate } from './beta-access.js';
@@ -14,6 +16,12 @@ import { genres, cosmeticSlots, creatorTypes, settingsSections, gameDetails, rec
 let storage;
 try { storage = window.localStorage; } catch { storage = { getItem: () => null, setItem: () => { throw Error('Unavailable'); } }; }
 let state = loadState(storage);
+let appearance=loadAppearance(storage);
+const themeMedia=window.matchMedia('(prefers-color-scheme: light)');
+function setAppearance(changes){appearance=normalizeAppearance({...appearance,...changes});applyAppearance(appearance,document.documentElement,themeMedia.matches);const saved=saveAppearance(storage,appearance);render();const status=document.querySelector('#theme-status');if(status)status.textContent=saved?'Theme preferences saved.':'Applied for this visit. Browser storage is unavailable.';}
+applyAppearance(appearance,document.documentElement,themeMedia.matches);
+themeMedia.addEventListener('change',()=>applyAppearance(appearance,document.documentElement,themeMedia.matches));
+window.addEventListener('storage',event=>{if(event.key==='metallic-appearance-v1'){appearance=loadAppearance(storage);applyAppearance(appearance,document.documentElement,themeMedia.matches);if(route==='settings'&&params.get('section')==='themes')render();}});
 let route, params, category = 'All', sort = 'recommended', friendTab = 'All friends', wardrobeTab = 'Outfits', platform = 'Windows';
 let draftOutfit = state.outfit, draftColor = state.color, draftAccessory = state.accessory;
 let avatarBack = false, settingsDirty = false, notificationsOpen = false;
@@ -57,6 +65,7 @@ function pageLinks(page, label='results', key='page') {
 }
 
 const icons = {
+  docs: '<path d="M4 3h12l4 4v14H4zM15 3v5h5M8 12h8M8 16h6"/>',
   home: '<path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/>',
   explore: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5z"/>',
   wardrobe: '<path d="m8 3 4 3 4-3 6 5-4 4-2-2v11H8V10l-2 2-4-4z"/>',
@@ -128,7 +137,7 @@ function shell(content, publicPage = false) {
     ${!publicPage?`<form class="top-search" id="search-form" role="search">${icon('search',18)}<input id="site-search" name="q" type="search" placeholder="Search games, people, groups" aria-label="Search games, people, and groups" value="${esc(route==='search'?params.get('q')||'':'')}" autocomplete="off" maxlength="160" aria-controls="search-suggestions" aria-expanded="false"><button class="search-submit" type="submit" aria-label="Search">${icon('arrow',16)}</button><div id="search-suggestions" hidden aria-label="Search suggestions"></div></form>
     <div class="top-actions">${button('notifications',icon('bell')+(unread?'<span class="notification-dot"></span>':''),'plain-icon','id="notification-toggle" aria-label="Notifications" aria-controls="notification-popover" aria-expanded="false"')}<a href="#/alloy" class="wallet" title="Preview Alloy balance">${icon('alloy',19)}<span>${state.previewAlloy.toLocaleString()}</span></a><a href="#/profile" class="top-profile" aria-label="View your profile">${avatar()}<span class="username">${esc(state.profile.name)}</span></a></div>`:`<div class="top-actions">${link('login','Log in','button quiet')}${link('signup','Redeem invite','button primary')}</div>`}</header>
     ${!publicPage?`<section id="notification-popover" class="notification-popover" role="region" aria-label="Notification inbox" hidden></section><button class="mobile-backdrop" data-action="menu" aria-label="Close navigation"></button>
-    <aside class="sidebar" id="sidebar"><span class="side-section-label">COMMUNITY</span><nav class="nav-group" aria-label="Community navigation">${navItem('friends','Friends')}${navItem('groups','Groups')}${navItem('marketplace','Marketplace')}</nav><span class="side-section-label">YOUR ACCOUNT</span><nav class="nav-group" aria-label="Account navigation">${navItem('alloy','Buy Alloy')}${navItem('settings','Settings')}</nav><span class="side-section-label">METALLIC</span><nav class="nav-group" aria-label="Platform tools">${navItem('download','Download')}</nav><div class="sidebar-bottom"><div class="premium-box"><div class="premium-title">${icon('download',17)} Your next adventure</div><p>Get the latest on the Metallic launcher.</p>${link('download','Launcher availability','premium-link')}</div><a class="sidebar-about" href="#/">About Metallic ${icon('arrow',14)}</a>${button('logout','Log out','button small sidebar-logout')}</div></aside>`:''}
+    <aside class="sidebar" id="sidebar"><span class="side-section-label">COMMUNITY</span><nav class="nav-group" aria-label="Community navigation">${navItem('friends','Friends')}${navItem('groups','Groups')}${navItem('marketplace','Marketplace')}</nav><span class="side-section-label">YOUR ACCOUNT</span><nav class="nav-group" aria-label="Account navigation">${navItem('alloy','Buy Alloy')}${navItem('settings','Settings')}</nav><span class="side-section-label">METALLIC</span><nav class="nav-group" aria-label="Platform tools">${navItem('download','Download')}${navItem('docs','Documentation')}</nav><div class="sidebar-bottom"><div class="premium-box"><div class="premium-title">${icon('download',17)} Your next adventure</div><p>Get the latest on the Metallic launcher.</p>${link('download','Launcher availability','premium-link')}</div><a class="sidebar-about" href="#/">About Metallic ${icon('arrow',14)}</a>${button('logout','Log out','button small sidebar-logout')}</div></aside>`:''}
     <main id="main" tabindex="-1" class="${publicPage?'public-page':'page'}"><div class="${publicPage?'public-content':'content'}">${content}<footer class="footer"><span>© ${new Date().getFullYear()} Metallic <span class="demo-label">Closed beta · Tester access only</span></span><div class="footer-links">${link('','About','')}${publicPage?link('login','Tester log in',''):link('download','Download','')+link('marketplace','Marketplace','')+link('settings','Settings','')}</div></footer></div></main>`;
 }
 function landing() {
@@ -146,13 +155,14 @@ function friendStrip() {
 }
 function home() {
   const favorites = games.filter(g => state.favorites.includes(g.id));
+  const recommendations=filterGames(recommendGames(games,state),'',category).slice(0,12);
   return `${pageHead('Home',`Welcome back, ${esc(state.profile.name)}`,link('wardrobe',avatar()+' Wardrobe · WIP','avatar-shortcut'))}
     ${friendStrip()}
     ${shelf('Continue','Pick up where you left off',games.slice(0,6),'continue')}
     ${!state.launcherDismissed ? `<div class="launcher-strip"><span>${icon('download')}<span><strong>Take Metallic with you</strong><small>Get the latest on the launcher.</small></span></span><div>${link('download','View launcher','button small')}${button('dismiss-launcher',icon('close',16),'plain-icon','aria-label="Dismiss launcher notice"')}</div></div>` : ''}
     ${favorites.length ? shelf('Favorite games','Always worth coming back to',favorites,'favorites','profile') : ''}
     <section class="home-section"><div class="section-top"><div><h2>Recommended for you</h2><p class="section-sub">A new favorite is just around the corner</p></div>${link('explore','See all '+icon('arrow',15),'view-all')}</div>
-    ${filters()}<div class="game-grid" id="game-results">${filterGames(recommendGames(games,state),'',category).slice(0,12).map(card).join('')}</div></section>
+    ${filters()}${recommendations.length?'<div class="game-grid" id="game-results">'+recommendations.map(card).join('')+'</div>':'<div class="inline-empty"><h3>No recommendations in this view</h3><p>Try another genre or restore your hidden games.</p>'+button('reset-hidden','Restore hidden games','button small')+'</div>'}</section>
     ${shelf('Popular right now','Find out what everyone is exploring',filterGames(games,'','All','players').slice(0,8),'popular','explore?sort=players')}
     ${shelf('Top rated','Community favorites',filterGames(games,'','All','rating').slice(0,8),'top-rated','explore?sort=rating')}`;
 }
@@ -172,7 +182,7 @@ function explore() {
   return `${pageHead('Explore','Find your next favorite. There’s a world for every way you play.',button('preferences',icon('settings',16)+' Your interests','button small'))}
     <nav class="discovery-tabs" aria-label="Discover games">${[['explore','For you',sort==='recommended'&&!filtered],['explore?sort=players','Popular',sort==='players'&&!filtered],['explore?sort=rating','Top rated',sort==='rating'&&!filtered],['explore?mode=Co-op','With friends',params.get('mode')==='Co-op'],['explore?mood=Relaxed','Relax & build',params.get('mood')==='Relaxed']].map(([to,label,active])=>link(to,label,active?'selected':'')).join('')}</nav>
     <div class="explore-layout"><div class="explore-main">
-    ${firstPage&&!filtered&&sort==='recommended'&&feature?`<section class="personalized-hero"><img src="${esc(feature.art)}" alt="" width="800" height="450" fetchpriority="high" decoding="async"><div><span class="eyebrow">${interest?'PICKED FOR YOUR INTERESTS':'IN THE SPOTLIGHT'}</span><h2>${esc(feature.title)}</h2><p>${interest?'A new adventure, with more of what you love.':'One world. Your next great story.'}</p><div class="spotlight-meta"><span>${esc(feature.genre)}</span><span>${icon('thumbs',13)} ${feature.rating}%</span><span>${icon('profile',13)} ${esc(feature.playing)} playing</span></div><div class="discovery-hero-actions">${link('game/'+feature.id,'Discover game '+icon('arrow',17),'button primary')}${!catalog.remote?button('hide-game','Not interested','text-button',`data-id="${feature.id}"`):''}</div></div></section>`:''}
+    ${firstPage&&!filtered&&sort==='recommended'&&feature?`<section class="personalized-hero"><img src="${esc(feature.art)}" alt="" width="800" height="450" fetchpriority="high" decoding="async"><div><span class="eyebrow">${interest?'PICKED FOR YOUR INTERESTS':'IN THE SPOTLIGHT'}</span><h2>${esc(feature.title)}</h2><p>${esc(featureInfo.tags.slice(0,3).join(' · '))}</p><div class="spotlight-meta"><span>${esc(feature.genre)}</span><span>${icon('thumbs',13)} ${feature.rating}%</span><span>${icon('profile',13)} ${esc(feature.playing)} playing</span></div><div class="discovery-hero-actions">${link('game/'+feature.id,'Discover game '+icon('arrow',17),'button primary')}${!catalog.remote?button('hide-game','Not interested','text-button',`data-id="${feature.id}"`):''}</div></div></section>`:''}
     <nav class="genre-browser" aria-label="Browse games by genre">${genres.map(genre=>`<a href="#${routeWithParams('explore',params,{category:params.get('category')===genre?null:genre,page:null})}" class="${params.get('category')===genre?'selected':''}">${icon(genre==='Racing'?'arrow':genre==='Simulation'?'create':genre==='Roleplay'?'friends':'play',16)}<span>${genre}</span></a>`).join('')}</nav>
     <section class="discovery-results" id="browse-games"><div class="section-top"><div><h2>${query?'Results for “'+esc(query)+'”':filtered?'Your filtered games':sort==='players'?'Popular right now':sort==='rating'?'Top rated games':'Discover your next game'}</h2><p class="section-sub">${filtered?'Fine-tune your search. Find your kind of game.':interest?'A mix shaped by your interests and favorites.':'Explore the catalog, one new favorite at a time.'}</p></div><label class="sort-label">Sort by<select id="sort">${[['recommended','For you'],['rating','Top rated'],['players','Most popular'],['name','Name']].map(([value,label])=>`<option value="${value}" ${sort===value?'selected':''}>${label}</option>`).join('')}</select></label></div>
     ${chips.length?`<div class="active-filters" aria-label="Active game filters">${chips.map(([key,value])=>button('remove-filter',esc(key==='q'?'“'+value+'”':key==='rating'?value+'%+ liked':key==='unplayed'?'Favorites hidden':value)+' '+icon('close',12),'filter-chip',`data-key="${key}" aria-label="Remove ${esc(key==='unplayed'?'hide favorites':value)} filter"`)).join('')}${button('clear-search','Clear all','text-button')}</div>`:''}
@@ -211,6 +221,9 @@ function download() { return `${pageHead('The adventure starts here.','Your home
 function wardrobe() {
   return `${pageHead('Wardrobe','Avatar customization is still in development.')}<section class="wardrobe-wip"><span class="wip-symbol">${icon('wardrobe',52)}</span><span class="beta-pill">WORK IN PROGRESS</span><h2>Nothing to see here yet.</h2><p>We’re building the wardrobe. Check back as Metallic takes shape.</p>${link('home','Back to Home '+icon('arrow',16),'button')}</section>`;
 }
+function creatorStarter(){
+  return '<section class="creator-start"><div class="section-top"><div><span class="eyebrow">START BUILDING</span><h2>Pick a starting point.</h2><p class="section-sub">Choose a template to make a local project draft.</p></div>'+link('docs/first-game','First game guide '+icon('arrow',16),'text-link')+'</div><div class="starter-grid">'+[['Obby','Jump right in.','Plan a short course with platforms and checkpoints.','2'],['Open world','Make room to explore.','Sketch a world players can explore at their own pace.','5'],['Social hangout','Bring people together.','Start with a shared space and a reason to stay.','6']].map(([template,title,description,art])=>'<article class="starter-card"><img src="art/game-'+art+'.svg" alt="'+template+' concept illustration" width="480" height="300"><div><span class="tag">'+template+'</span><h3>'+title+'</h3><p>'+description+'</p>'+button('template-project','Use template '+icon('arrow',16),'button primary small','data-value="'+template+'"')+'</div></article>').join('')+'</div><div class="creator-learning"><div><span class="eyebrow">LEARN AS YOU GO</span><h2>You don’t have to start from scratch.</h2><p>Read a guide, try a scripting example, or browse the proposed API.</p></div><div>'+link('docs/getting-started',icon('docs',20)+' Getting started','learning-link')+link('docs/collectible',icon('play',20)+' Make a collectible','learning-link')+link('docs/api-instance',icon('models',20)+' API reference','learning-link')+'</div></div></section>';
+}
 function create() {
   const tab=Object.hasOwn(creatorTypes,params.get('tab'))?params.get('tab'):'games';
   const slot=cosmeticSlots.includes(params.get('slot'))?params.get('slot'):'';
@@ -218,13 +231,13 @@ function create() {
   const items=tab==='games'?state.projects:state.creatorAssets.filter(asset=>asset.type===tab&&(!slot||asset.subcategory===slot)&&(!listings||asset.listing));
   const draftPage=pageWindow(items,params.get('page'));
   const singular={games:'game',models:'model',audio:'audio',plugins:'plugin',cosmetics:'cosmetic'}[tab];
-  return `${pageHead('Creator hub','Build the next thing players fall in love with.',button(tab==='games'?'new-project':'new-asset',icon('create',17)+' New '+singular,'button primary',`data-value="${tab}"`))}
+  return `${pageHead('Creator hub','Your games, assets, and next idea.',button(tab==='games'?'new-project':'new-asset',icon('create',17)+' New '+singular,'button primary',`data-value="${tab}"`))}
     <div class="creator-topline"><nav class="creator-category-tabs" aria-label="Creator categories">${Object.entries(creatorTypes).map(([key,label])=>link('create?tab='+key,icon(key==='games'?'play':key==='cosmetics'?'wardrobe':key,18)+label,key===tab?'selected':'')).join('')}</nav>${link('marketplace','Creator Marketplace '+icon('arrow',16),'button small')}</div>
     ${tab==='cosmetics'?`<nav class="cosmetic-slots" aria-label="Cosmetic categories">${link('create?tab=cosmetics','All cosmetics',!slot?'selected':'')}${cosmeticSlots.map(name=>link('create?tab=cosmetics&slot='+name,name,slot===name?'selected':'')).join('')}</nav>`:''}
     <section class="creator-workspace-head"><div><span class="eyebrow">YOUR LIBRARY</span><h2>${slot||creatorTypes[tab]}</h2><p>${tab==='games'?'Plan, organize, and build your games.':tab==='models'?'Reusable models, meshes, and materials for your worlds.':tab==='audio'?'Music, ambience, and sounds that bring a game to life.':tab==='plugins'?'Tools that make creating a little easier.':'Wearable ideas, organized by where they belong.'}</p></div><div class="creator-total"><strong>${items.length}</strong><span>${listings?'listing drafts':'local drafts'}</span></div></section>
     ${tab!=='games'?`<nav class="creator-library-tabs" aria-label="Library view">${link('create?tab='+tab+(slot?'&slot='+slot:''),'My assets',!listings?'selected':'')}${link('create?tab='+tab+'&view=listings'+(slot?'&slot='+slot:''),'Listing drafts',listings?'selected':'')}</nav>`:''}
     ${items.length?`<div class="creator-draft-grid">${draftPage.items.map(item=>`<article class="creator-draft-card"><div class="draft-cover color-${tab==='audio'?'purple':tab==='cosmetics'?'amber':'blue'}">${assetIcon(tab)}<span class="tag">${item.listing?'Listing draft':'Draft'}</span></div><div class="draft-card-body"><h3>${esc(item.name)}</h3><p>${esc(tab==='games'?item.template+(item.groupId?' · '+(findGroup(state,item.groupId)?.name||'Group'):''):item.subcategory||creatorTypes[tab])}</p><div class="button-row">${button(tab==='games'?'edit-project':'edit-asset','Edit','button small',`data-id="${esc(item.id)}"`)}${tab==='games'?button('delete-project','Delete','button quiet small',`data-id="${esc(item.id)}"`):button('prepare-listing',item.listing?'Edit listing':'Prepare listing','button small',`data-id="${esc(item.id)}"`)}</div></div></article>`).join('')}</div>`:
-    empty(listings?'Your first listing starts here.':`Your next ${singular} starts here.`,listings?'Create an asset, then prepare its marketplace listing.':tab==='games'?'Give your idea a name and choose a starting template.':'Organize an idea, add its details, and prepare it for your creator library.',button(tab==='games'?'new-project':'new-asset','Create '+singular,'button primary',`data-value="${tab}"`))}
+    tab==='games'&&!listings?creatorStarter():empty(listings?'Your first listing starts here.':`Your next ${singular} starts here.`,listings?'Create an asset, then prepare its marketplace listing.':tab==='games'?'Give your idea a name and choose a starting template.':'Organize an idea, add its details, and prepare it for your creator library.',button(tab==='games'?'new-project':'new-asset','Create '+singular,'button primary',`data-value="${tab}"`))}
     ${pageLinks(draftPage,'creator drafts')}
     <section class="creator-market-banner"><span class="market-banner-icon">${icon('marketplace',34)}</span><div><span class="eyebrow">MADE FOR CREATORS</span><h2>Build with the community.</h2><p>Find models, audio, plugins, and cosmetics—or prepare your own assets for sale.</p></div>${link('marketplace','Browse Marketplace '+icon('arrow',17),'button')}</section>
     <p class="fine-print">Local planning drafts. Asset uploads, Studio editing, marketplace publication, and sales will connect when creator services launch.</p>`;
@@ -258,6 +271,7 @@ function profileGroups(name,own) {
 function settings() {
   const section=Object.hasOwn(settingsSections,params.get('section'))?params.get('section'):'account';
   let content='';
+  if(section==='themes')content=themesPage(appearance);
   if(section==='account')content=settingsForm(section,`<label for="setting-name">Username</label><input id="setting-name" name="name" aria-label="Username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(state.profile.name)}"><small class="field-hint">3–20 letters, numbers, or underscores.</small><label for="setting-bio">Bio</label><textarea id="setting-bio" name="bio" maxlength="240" rows="4">${esc(state.profile.bio)}</textarea><small class="field-hint">A little about you, in 240 characters or less.</small><div class="account-readonly"><span>Sign-in email</span><strong>Available with live accounts</strong></div>`);
   if(section==='privacy')content=settingsForm(section,`<label for="setting-visibility">Who can view my profile?</label><select id="setting-visibility" name="visibility">${['Everyone','Friends only','Only me'].map(v=>`<option ${state.profile.visibility===v?'selected':''}>${v}</option>`).join('')}</select><label for="setting-friend-policy">Who can send me friend requests?</label><select id="setting-friend-policy" name="friendPolicy">${['Everyone','Friends of friends','Nobody'].map(v=>`<option ${state.friendPolicy===v?'selected':''}>${v}</option>`).join('')}</select><label for="setting-join-policy">Who can join me in games?</label><select id="setting-join-policy" name="joinPolicy">${['Everyone','Friends','Nobody'].map(value=>`<option ${state.joinPolicy===value?'selected':''}>${value}</option>`).join('')}</select><label class="toggle-row"><span><strong>Show my activity</strong><small>Let friends see what I’m playing.</small></span><input type="checkbox" name="activity" role="switch" ${state.activity?'checked':''}></label><p class="fine-print">Privacy preferences are saved locally. Cross-account privacy controls will apply when live accounts are connected.</p>`);
   if(section==='notifications')content=settingsForm(section,`<label class="toggle-row"><span><strong>Friend requests</strong><small>See incoming friend requests in your inbox.</small></span><input name="notifications" type="checkbox" role="switch" ${state.notifications?'checked':''}></label><label class="toggle-row"><span><strong>Platform updates</strong><small>See welcome messages and platform announcements.</small></span><input name="updates" type="checkbox" role="switch" ${state.updateNotifications?'checked':''}></label><div class="settings-info">${icon('bell',20)}<p>Notifications open from the bell in the top right. These preferences control your preview inbox.</p></div>`);
@@ -421,11 +435,11 @@ function render(preserveFocus=true) {
     settingsDirty=false;if(dialog.open)dialog.close();
   }
   ensureCatalogData();
-  const pages={'':landing,home,explore,search:searchPage,login:auth,signup:auth,download,wardrobe,create,alloy,profile,settings,friends,marketplace,groups:groupsPage};
-  const page=Object.hasOwn(pages,route)?pages[route]:/^game\/[\w-]+$/.test(route)?gamePage:route.startsWith('groups/')?groupPage:notFound;
-  const titles={'':'Closed beta',home:'Home',explore:'Explore',search:'Search',signup:'Invite access',login:'Log in',download:'Download',wardrobe:'Wardrobe',create:'Creator hub',alloy:'Buy Alloy',profile:'Profile',settings:'Settings',friends:'Friends',marketplace:'Creator Marketplace',groups:'Groups'};
+  const pages={'':landing,home,explore,search:searchPage,login:auth,signup:auth,download,wardrobe,create,alloy,profile,settings,friends,marketplace,groups:groupsPage,docs:()=>documentationPage(route,params)};
+  const page=Object.hasOwn(pages,route)?pages[route]:/^game\/[\w-]+$/.test(route)?gamePage:route.startsWith('groups/')?groupPage:route.startsWith('docs/')?()=>documentationPage(route,params):notFound;
+  const titles={'':'Closed beta',home:'Home',explore:'Explore',search:'Search',signup:'Invite access',login:'Log in',download:'Download',wardrobe:'Wardrobe',create:'Creator hub',alloy:'Buy Alloy',profile:'Profile',settings:'Settings',friends:'Friends',marketplace:'Creator Marketplace',groups:'Groups',docs:'Documentation'};
   const game=route.startsWith('game/')?catalog.peek(route.split('/')[1]):null;
-  document.title=`${(route.startsWith('groups/')?findGroup(state,route.split('/')[1])?.name:null) || game?.title || (Object.hasOwn(titles,route)?titles[route]:'Page not found')} | Metallic`;
+  document.title=`${(route.startsWith('docs/')?docArticles.find(article=>article.id===route.slice(5))?.title:null) || (route.startsWith('groups/')?findGroup(state,route.split('/')[1])?.name:null) || game?.title || (Object.hasOwn(titles,route)?titles[route]:'Page not found')} | Metallic`;
   document.body.classList.remove('nav-open');
   notificationsOpen=false;
   app.innerHTML=shell(page(),['','login','signup'].includes(route));
@@ -518,8 +532,8 @@ function scheduleFriendClose(related) {
   if(related&&(activeFriendTrigger?.contains(related)||menu?.contains(related)))return;
   clearTimeout(friendCloseTimer);friendCloseTimer=setTimeout(closeFriendPreview,140);
 }
-function projectEditor(project,groupId='') {
-  modal(project?'Edit game':'Create a game',`<p class="muted">${project?'Shape your idea before you start building.':'Every great world starts with an idea.'}</p><form id="project-form" data-id="${esc(project?.id||'')}"><label for="project-name">Game name</label><input id="project-name" name="name" required maxlength="60" value="${esc(project?.name||'')}" placeholder="My first world"><label for="project-owner">Creator</label><select id="project-owner" name="groupId"><option value="">${esc(state.profile.name)} · Personal game</option>${state.myGroups.map(group=>`<option value="${group.id}" ${(project?.groupId||groupId)===group.id?'selected':''}>${esc(group.name)} · Group game</option>`).join('')}</select><label for="project-template">Starting template</label><select id="project-template" name="template">${templates.map(t=>`<option ${project?.template===t?'selected':''}>${t}</option>`).join('')}</select><label for="project-description">Description</label><textarea id="project-description" name="description" maxlength="500" rows="3" placeholder="What will players discover?">${esc(project?.description||'')}</textarea><p class="fine-print">Saved as a local draft. Studio editing and publishing are coming later.</p><button class="button primary full" type="submit">${project?'Save draft':'Create draft'} ${icon('arrow',17)}</button></form>`);
+function projectEditor(project,groupId='',initialTemplate='') {
+  modal(project?'Edit game':'Create a game',`<p class="muted">${project?'Shape your idea before you start building.':'Every great world starts with an idea.'}</p><form id="project-form" data-id="${esc(project?.id||'')}"><label for="project-name">Game name</label><input id="project-name" name="name" required maxlength="60" value="${esc(project?.name||'')}" placeholder="My first world"><label for="project-owner">Creator</label><select id="project-owner" name="groupId"><option value="">${esc(state.profile.name)} · Personal game</option>${state.myGroups.map(group=>`<option value="${group.id}" ${(project?.groupId||groupId)===group.id?'selected':''}>${esc(group.name)} · Group game</option>`).join('')}</select><label for="project-template">Starting template</label><select id="project-template" name="template">${templates.map(t=>`<option ${(project?.template||initialTemplate)===t?'selected':''}>${t}</option>`).join('')}</select><label for="project-description">Description</label><textarea id="project-description" name="description" maxlength="500" rows="3" placeholder="What will players discover?">${esc(project?.description||'')}</textarea><p class="fine-print">Saved as a local draft. Studio editing and publishing are coming later.</p><button class="button primary full" type="submit">${project?'Save draft':'Create draft'} ${icon('arrow',17)}</button></form>`);
 }
 const scrollPositions=new Map();
 let lastHash=location.hash;
@@ -562,6 +576,12 @@ document.addEventListener('click',async e=>{
   if(requiresTester(readRoute(location.hash).route)&&!betaSession.hasAccess()){render(false);return;}
   const {action,value,id,name}=el.dataset;
   switch(action){
+    case 'theme-mode':if(['dark','light','system'].includes(value))setAppearance({mode:value});break;
+    case 'theme-accent':setAppearance({accent:value});break;
+    case 'theme-reset':setAppearance(defaultAppearance);break;
+    case 'template-project':if(templates.includes(value))projectEditor(null,'',value);break;
+    case 'doc-anchor':{const heading=document.getElementById(el.dataset.target)?.querySelector('h2');heading?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});heading?.focus({preventScroll:true});break;}
+    case 'copy-doc-code':{const code=document.getElementById(el.dataset.target)?.textContent;if(code)try{await navigator.clipboard.writeText(code);el.textContent='Copied';toast('Code copied.');}catch{toast('Clipboard is unavailable. Select the code to copy it.');}break;}
     case 'logout':{
       clearTimeout(sessionTimer);settingsDirty=false;sessionBusy=true;
       const task=betaSession.logout();if(dialog.open)dialog.close();navigate('/login');render(false);
@@ -643,9 +663,10 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
   const form=e.target;
-  if(!['invite-form','search-form','friend-search','auth-form','project-form','settings-form','asset-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id))return;
+  if(!['docs-search-form','invite-form','search-form','friend-search','auth-form','project-form','settings-form','asset-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id))return;
   e.preventDefault();if(!form.reportValidity())return;
   const data=new FormData(form);
+  if(form.id==='docs-search-form'){navigate('/docs'+(data.get('q').trim()?'?q='+encodeURIComponent(data.get('q').trim()):''));return;}
   if(form.id==='invite-form'){
     if(inviteBusy)return;
     inviteBusy=true;const submit=form.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Verifying…';
@@ -733,6 +754,8 @@ document.addEventListener('input',e=>{
   if(e.target.closest('#settings-form')){settingsDirty=true;document.querySelector('.settings-save .muted').textContent='Unsaved changes';}
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='theme-text-size'){setAppearance({textSize:e.target.value});return;}
+  if(e.target.id==='theme-contrast'){setAppearance({contrast:e.target.checked});return;}
   if(e.target.id==='sort')setQuery({sort:e.target.value==='recommended'?null:e.target.value});
   if(e.target.id==='server-sort')setQuery({serverSort:e.target.value==='available'?null:e.target.value});
   if(e.target.closest('#server-form')&&e.target.name==='visibility')document.querySelector('.private-access-options').hidden=e.target.value==='public';

@@ -4,7 +4,7 @@ Reviewed November 1, 2026. The supplied Metallic reference remains the basis of 
 
 ## Automated verification
 
-`npm test` covers 48 checks:
+`npm test` covers 52 checks. The orange refresh, theme and documentation checks are recorded in [design-refresh.md](design-refresh.md).
 
 - Standalone SVG XML casing and internal paint references.
 - Global games/people/groups search, including custom groups, own profile, deduplication, and empty queries.
