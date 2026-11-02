@@ -4,6 +4,8 @@ A responsive front-end foundation for the Metallic gaming platform, based on the
 
 ## Run locally
 
+To run either version entirely in your browser, use [Beta access preview](https://codespaces.new/Metallic-Club/website/tree/codex/closed-beta?quickstart=1) or [Early-release preview](https://codespaces.new/Metallic-Club/website/tree/codex/early-release-preview?quickstart=1). GitHub Codespaces starts the preview on port 4173. See [developer preview instructions](docs/developer-previews.md) for access details, local commands and version differences.
+
 Requires Node.js 22 or newer. No dependencies or installation step.
 
 ```sh

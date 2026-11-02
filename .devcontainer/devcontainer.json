@@ -1,0 +1,19 @@
+{
+  "name": "Metallic website preview",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
+  "forwardPorts": [4173],
+  "portsAttributes": {
+    "4173": {
+      "label": "Metallic browser preview",
+      "onAutoForward": "openBrowserOnce"
+    }
+  },
+  "postAttachCommand": {
+    "preview": "node scripts/codespaces-preview.mjs"
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["docs/developer-previews.md"]
+    }
+  }
+}
