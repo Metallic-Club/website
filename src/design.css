@@ -27,3 +27,6 @@ body{font-size:15px;line-height:1.55;background:var(--bg);color:var(--text)}butt
 
 /* Gameplay actions keep a stable green meaning, independent of the selected accent. */
 .button.play-button,.game-actions .button.play-button,.button[data-action="join-server"]:not(:disabled),.button[data-action="join-friend"]:not(:disabled){background:var(--play-bg);border-color:var(--play-bg);color:var(--play-text)}.button.play-button:hover:not(:disabled),.game-actions .button.play-button:hover:not(:disabled),.button[data-action="join-server"]:hover:not(:disabled),.button[data-action="join-friend"]:hover:not(:disabled){background:var(--play-hover);border-color:var(--play-hover);color:var(--play-text)}
+
+/* Game-card links and quick Play are separate keyboard-accessible controls. */
+.game-card-link{display:flex;flex-direction:column;min-width:0;border-radius:inherit}.game-quick-play{position:absolute;inset:0 0 auto;aspect-ratio:1;pointer-events:none}.game-play{padding:0;border:0;cursor:pointer;pointer-events:auto}.game-play svg{display:block;margin:0;fill:currentColor;stroke:none}.game-card:focus-within .game-play{opacity:1;transform:translateY(0)}.game-card:focus-within .game-genre{opacity:1}.game-play:hover{background:var(--play-hover)}.game-play:focus-visible{outline:3px solid var(--text);outline-offset:3px}
