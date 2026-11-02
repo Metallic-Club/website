@@ -54,9 +54,7 @@ test('stored data is normalized, bounded, and consistent before rendering', () =
   assert.deepEqual(state.favorites, ['1']);
   assert.equal(state.profile.name, defaults.profile.name);
   assert.equal(state.profile.bio.length, 240);
-  assert.equal(state.projects.length, 1);
-  assert.equal(state.projects[0].name, 'My world');
-  assert.equal(state.projects[0].description.length, 500);
+  assert.equal(Object.hasOwn(state,'projects'), false); // Retired project records are not restored.
   assert.equal(state.accessory, 'Headphones');
 });
 test('popular sort handles K suffixes without changing the original catalog', () => {

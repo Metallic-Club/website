@@ -2,7 +2,7 @@ import { compactCount } from './pagination.js';
 // Sample content and client-side discovery for the platform preview.
 export const genres = ['Action', 'Adventure', 'Roleplay', 'Obby', 'Simulation', 'Racing'];
 export const cosmeticSlots = ['Hats', 'Shirts', 'Pants', 'Shoes', 'Shoulders', 'Back', 'Neck', 'Face', 'Waist'];
-export const creatorTypes = { games: 'Games', models: 'Models & meshes', audio: 'Audio & music', plugins: 'Plugins', cosmetics: 'Cosmetics' };
+export const creatorTypes = { games: 'Games', templates: 'Templates', models: 'Models & meshes', textures: 'Textures & materials', audio: 'Audio & music', plugins: 'Plugins', cosmetics: 'Cosmetics' };
 export const settingsSections = {
   account: ['Account', 'Your profile and account details.'],
   themes: ['Themes', 'Appearance, accent colors, and readability.'],

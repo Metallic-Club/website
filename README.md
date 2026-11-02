@@ -31,7 +31,7 @@ Documentation is available at `#/docs`, with getting-started guides, three tutor
 
 - Game search with keyboard-accessible suggestions, URL-backed genre filters and sorting, detailed game pages, share links, and persistent favorites.
 - Generic profile icons for all players. Wardrobe is a work-in-progress placeholder; previous appearance data is preserved for future development.
-- Local game drafts with editable names, templates, descriptions, and deletion confirmation.
+- Default starter templates, custom device-local templates, an asset library, and file/folder imports with drag-and-drop support.
 - Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
 - Invite-gated signup with server verification, short-lived in-memory access and a fail-closed default. All platform routes require a server-verified beta tester session; sample login credentials never grant access. Invited signup remains a preview until registration is connected. Accessible pack-preview dialogs remain available.
@@ -47,7 +47,7 @@ Explore filters and friend tabs survive reloads and can be bookmarked. For examp
 - Friend presence uses gray for offline/hidden, blue for online, green for playing, and orange for Studio across Home, Friends, and profile friend lists. Status labels are available on hover and to assistive technology.
 - Square profile group and badge tiles fit desktop and mobile layouts. The mutual-friend summary uses a text link above the friend list.
 - Profile groups display membership roles and a crown badge for owned groups, using the same role data as group member lists.
-- Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. A locally created group can own a game draft through the Creator field in the game editor.
+- Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. The control panel has profile/image editing, announcements, ranked roles, granular permissions, and member-role assignment. Templates and imported files stay on the device.
 
 ## Scale-aware foundation
 

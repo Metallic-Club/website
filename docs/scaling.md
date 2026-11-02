@@ -10,7 +10,7 @@ The work in this release makes browser rendering and delivery predictable as col
 | --- | --- |
 | Catalog repository | Indexes searchable metadata once; stable ID tie-breaking; bounded 20-query result cache |
 | Catalog pages | 12 cards per page; genre/mood/style/rating filters; direct page URLs |
-| Other collections | Paged friends, marketplace, groups, creator drafts, profile favorites/groups/friends, group members and drafts |
+| Other collections | Paged friends, marketplace, groups, creator assets, profile favorites/groups/friends, group members |
 | Preview shelves | At most 8 cards per shelf and 12 Home friends |
 | Search | At most 6 preview results per category, 12 in a category page, 3 suggestions per category; 120 ms debounce |
 | Notifications | At most 20 rendered entries with a link to remaining requests |

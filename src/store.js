@@ -1,3 +1,5 @@
+import {normalizeAssets} from './creator-data.js';
+import {normalizeGroupConfig} from './group-access.js';
 import { games } from './catalog.js';
 import { compactCount } from './pagination.js';
 import { genres, cosmeticSlots, creatorTypes } from './platform.js';
@@ -5,7 +7,6 @@ import { DEFAULT_ALLOY, normalizeSocialState } from './social.js';
 export const STORAGE_KEY = 'metallic-demo-v1';
 export const outfits = ['Classic', 'Explorer', 'Streetwear'];
 export const accessories = ['None', 'Cap', 'Headphones'];
-export const templates = ['Blank canvas', 'Obby', 'Open world', 'Social hangout'];
 export const colors = [
   { value: '#394c60', name: 'Slate blue' }, { value: '#7e4fba', name: 'Violet' },
   { value: '#a84354', name: 'Crimson' }, { value: '#3e8274', name: 'Forest' },
@@ -15,8 +16,8 @@ export const colors = [
 export const defaults = {
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone' },
   outfit: 'Classic', color: '#394c60', accessory: 'None', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
-  requests: ['PixelNova', 'CloudBuilder'], outgoing: [], projects: [], notifications: true, activity: true, launcherDismissed: false,
-  preferredGenres: [], hiddenGames: [], creatorAssets: [], savedAssets: [], readNotifications: [],
+  requests: ['PixelNova', 'CloudBuilder'], outgoing: [], notifications: true, activity: true, launcherDismissed: false,
+  preferredGenres: [], hiddenGames: [], creatorAssets: [], inventory: [], assetVotes: {}, groupConfigs: {}, savedAssets: [], readNotifications: [],
   updateNotifications: true, friendPolicy: 'Everyone',
   previewAlloy: DEFAULT_ALLOY, reservedServers: [], myGroups: [], groupMemberships: [], groupRequests: [], joinPolicy: 'Friends',
 };
@@ -34,29 +35,13 @@ export function loadState(storage) {
     if (Array.isArray(data.hiddenGames)) state.hiddenGames = unique(data.hiddenGames, id => gameIds.has(id));
     if (Array.isArray(data.preferredGenres)) state.preferredGenres = unique(data.preferredGenres, genre => genres.includes(genre), 6);
     for (const key of ['savedAssets', 'readNotifications']) if (Array.isArray(data[key])) state[key] = unique(data[key], value => typeof value === 'string' && /^[\w-]{1,80}$/.test(value));
-    if (Array.isArray(data.creatorAssets)) {
-      const ids = new Set();
-      state.creatorAssets = data.creatorAssets.filter(asset => asset && typeof asset.id === 'string' && /^[\w-]{1,64}$/.test(asset.id)
-        && typeof asset.name === 'string' && asset.name.trim() && Object.hasOwn(creatorTypes, asset.type) && asset.type !== 'games')
-        .filter(asset => !ids.has(asset.id) && ids.add(asset.id)).slice(0, 100).map(asset => ({
-          id: asset.id, name: asset.name.trim().slice(0, 60), type: asset.type,
-          subcategory: asset.type === 'cosmetics' ? (cosmeticSlots.includes(asset.subcategory) ? asset.subcategory : 'Hats') : (typeof asset.subcategory === 'string' ? asset.subcategory.slice(0, 30) : ''),
-          description: typeof asset.description === 'string' ? asset.description.slice(0, 500) : '',
-          price: Number.isSafeInteger(asset.price) ? Math.max(0, Math.min(asset.price, 1000000)) : 0,
-          listing: asset.listing === true,
-        }));
-    }
+    state.creatorAssets=normalizeAssets(data.creatorAssets);
+    if(Array.isArray(data.inventory))state.inventory=unique(data.inventory,value=>typeof value==='string'&&/^[\w-]{1,80}$/.test(value));
+    for(const [id,vote] of Object.entries(data.assetVotes&&typeof data.assetVotes==='object'?data.assetVotes:{}).slice(0,200))if(/^[\w-]{1,80}$/.test(id)&&[1,-1].includes(vote))state.assetVotes[id]=vote;
+    for(const [id,config] of Object.entries(data.groupConfigs&&typeof data.groupConfigs==='object'?data.groupConfigs:{}).slice(0,35))if(/^[\w-]{1,64}$/.test(id))state.groupConfigs[id]=normalizeGroupConfig(config);
     for (const key of ['friends', 'requests', 'outgoing']) if (Array.isArray(data[key])) state[key] = unique(data[key], username);
     state.requests = state.requests.filter(name => !state.friends.includes(name));
     state.outgoing = state.outgoing.filter(name => !state.friends.includes(name) && !state.requests.includes(name));
-    if (Array.isArray(data.projects)) {
-      const ids = new Set();
-      state.projects = data.projects.filter(p => p && typeof p.id === 'string' && /^[a-zA-Z0-9-]{1,64}$/.test(p.id)
-        && typeof p.name === 'string' && p.name.trim() && templates.includes(p.template))
-        .filter(p => !ids.has(p.id) && ids.add(p.id)).slice(0, 100)
-        .map(p => ({ id: p.id, name: p.name.trim().slice(0, 60), template: p.template,
-          description: typeof p.description === 'string' ? p.description.slice(0, 500) : '', groupId: typeof p.groupId === 'string' ? p.groupId : '' }));
-    }
     if (data.profile && typeof data.profile === 'object') {
       if (username(data.profile.name)) state.profile.name = data.profile.name;
       if (typeof data.profile.bio === 'string') state.profile.bio = data.profile.bio.slice(0, 240);
@@ -72,7 +57,7 @@ export function loadState(storage) {
   return state;
 }
 export function saveState(storage, state) {
-  try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; } catch { return false; }
+  try { const value=JSON.stringify(state);if(value.length>512000)return false;storage.setItem(STORAGE_KEY,value);return true; } catch { return false; }
 }
 export function filterGames(games, query = '', category = 'All', sort = 'recommended') {
   const result = games.filter(g => (category === 'All' || g.genre === category) && `${g.title} ${g.genre}`.toLowerCase().includes(query.trim().toLowerCase()));

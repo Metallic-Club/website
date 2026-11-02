@@ -1,3 +1,4 @@
+import {normalizeGroupConfig,defaultRoles} from './group-access.js';
 import { games } from './catalog.js';
 
 export const SERVER_PRICE = 100;
@@ -47,10 +48,8 @@ export function friendActivity(state, name) {
   return game ? { session, game, access: friendJoinAccess(state, session, server) } : null;
 }
 export function getGroups(state) {
-  return [...sampleGroups.map(group => ({ ...group, mine: false, roles: sampleGroupRoles[group.id] || {} })), ...(state.myGroups || []).map(group => ({ ...group,
-    owner: state.profile.name, emblem: group.name[0].toUpperCase(), color: 'silver', mine: true, games: [],
-    shout: 'Welcome to ' + group.name + '. Your group starts here.', members: [state.profile.name],
-  }))];
+  const groups=[...sampleGroups.map(group=>({...group,mine:false,roleDefinitions:structuredClone(defaultRoles),roles:{...(sampleGroupRoles[group.id]||{})}})),...(state.myGroups||[]).map(group=>({...group,owner:state.profile.name,emblem:group.name[0].toUpperCase(),color:'silver',mine:true,games:[],shout:'Welcome to '+group.name+'.',members:[state.profile.name],roleDefinitions:structuredClone(defaultRoles),roles:{}}))];
+  return groups.map(group=>{const saved=state.groupConfigs?.[group.id],config=saved?normalizeGroupConfig(saved):{};return {...group,...config,members:[...new Set([...group.members,...(config.members||[]),...((state.groupMemberships||[]).includes(group.id)?[state.profile.name]:[])])],roles:saved?config.roles:group.roles,emblem:(config.name||group.name)[0].toUpperCase()};});
 }
 export const findGroup = (state, id) => getGroups(state).find(group => group.id === id);
 export function groupMembers(group, state) {
@@ -149,6 +148,4 @@ export function normalizeSocialState(data, state) {
         allowFriends: server.visibility === 'private' && server.allowFriends === true,
       }));
   }
-  const owned = new Set(state.myGroups.map(group => group.id));
-  state.projects = state.projects.map(project => ({ ...project, groupId: owned.has(project.groupId) ? project.groupId : '' }));
 }

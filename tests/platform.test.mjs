@@ -47,15 +47,15 @@ test('new creator and discovery state migrates safely from old browser saves', (
   assert.equal(state.updateNotifications, true);
   assert.deepEqual(state.readNotifications, []);
 });
-test('asset listing drafts and game preferences are normalized before rendering', () => {
+test('imported assets and game preferences are normalized before rendering', () => {
   const state = loadState({ getItem: () => JSON.stringify({ preferredGenres: ['Racing', 'Racing', 'invalid'],
-    creatorAssets: [{ id: 'asset-1', name: ' Shoes ', type: 'cosmetics', subcategory: 'Shoes', price: 125, listing: true },
+    creatorAssets: [{ id: 'asset-1', name: ' Shoes ', type: 'cosmetics', subcategory: 'Shoes', price: 125, files: [{key:'asset-1-0',name:'shoes.glb',size:120,mime:'model/gltf-binary'}] },
       { id: 'asset-1', name: 'Duplicate', type: 'cosmetics' }, { id: 'bad', name: 'Invalid', type: '__proto__' }],
     savedAssets: ['orbit-shoes', '"><img>'], readNotifications: ['welcome', 'request-PixelNova'] }) });
   assert.deepEqual(state.preferredGenres, ['Racing']);
   assert.equal(state.creatorAssets.length, 1);
   assert.equal(state.creatorAssets[0].name, 'Shoes');
-  assert.equal(state.creatorAssets[0].price, 125);
-  assert.equal(state.creatorAssets[0].listing, true);
+  assert.equal(state.creatorAssets[0].price, 0);
+  assert.equal(state.creatorAssets[0].local, true);
   assert.deepEqual(state.savedAssets, ['orbit-shoes']);
 });

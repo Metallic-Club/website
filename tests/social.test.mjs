@@ -61,17 +61,18 @@ test('creator ownership links lead to known groups or a player profile', () => {
   assert.equal(findGroup(state, owner.id).name, owner.name);
   assert.deepEqual(ownerForGame('13'), { type: 'user', id: 'LunaBlocks', name: 'LunaBlocks' });
 });
-test('groups, group games, reservations, and the demo wallet survive normalization', () => {
+test('groups, permissions, reservations, and the demo wallet survive normalization', () => {
   const state = structuredClone(defaults);
   state.myGroups = [{ id: 'my-builders', name: 'My Builders', description: 'A group', category: 'Creating', joinPolicy: 'open' }];
-  state.projects = [{ id: 'game-draft', name: 'Group game', template: 'Obby', description: '', groupId: 'my-builders' }];
+  state.groupConfigs={'my-builders':{shout:'Build together',roles:{heroX_x:'Developer'},members:['heroX_x']}};
   createServerPreview(state, { name: 'Our lobby', gameId: '1', visibility: 'private', invited: ['heroX_x'] }, 'my-server');
   let value; const storage = { getItem: () => value, setItem: (_, next) => { value = next; } };
   saveState(storage, state);
   const loaded = loadState(storage);
   assert.equal(loaded.previewAlloy, defaults.previewAlloy - SERVER_PRICE);
   assert.equal(loaded.reservedServers[0].name, 'Our lobby');
-  assert.equal(loaded.projects[0].groupId, 'my-builders');
+  assert.equal(findGroup(loaded,'my-builders').shout, 'Build together');
+  assert.equal(findGroup(loaded,'my-builders').roles.heroX_x,'Developer');
   assert.equal(findGroup(loaded, 'my-builders').mine, true);
   assert.equal(findGroup(loaded, 'my-builders').owner, loaded.profile.name);
 });

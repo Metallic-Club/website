@@ -1,0 +1,21 @@
+import {mkdir,writeFile} from 'node:fs/promises';
+import {marketplaceAssets} from '../src/platform.js';
+const assets=[...marketplaceAssets,{id:'slate-material',type:'textures',name:'Slate Surface'},{id:'woven-texture',type:'textures',name:'Woven Fabric'}];
+const colors={blue:'#86a9c9',green:'#91b9a2',purple:'#b5a4ce',amber:'#c5b38e'};
+await mkdir('public/art/assets',{recursive:true});
+for(const asset of assets){
+  const color=colors[asset.color]||'#91a9b4';let art='';
+  if(asset.id==='city-kit')for(let i=0;i<5;i++){const x=80+i*68,y=130+(i%2)*40,h=90+(i%3)*36;art+=`<path d="M${x} ${y}l40-22 35 20-40 23z" fill="#bfd0dc"/><path d="M${x} ${y}l35 21v${h}l-35-20z" fill="#607b91"/><path d="M${x+35} ${y+21}l40-23v${h}l-40 23z" fill="${color}"/>`;for(let r=0;r<3;r++)art+=`<path d="M${x+45} ${y+33+r*24}l7-4v10l-7 4zm17-10 7-4v10l-7 4z" fill="#263a4b"/>`;}
+  else if(asset.id==='nature-kit'){for(let i=0;i<5;i++){const x=90+i*78,y=170+(i%2)*48;art+=`<ellipse cx="${x}" cy="${y+120}" rx="33" ry="10" fill="#121c1d"/><path d="M${x-6} ${y+20}h12v95h-12" fill="#a18b71"/><path d="M${x} ${y-70}l-40 90h80zM${x} ${y-28}l-49 90h98z" fill="${i%2?'#799f8e':'#9cbeaa'}"/>`;}}
+  else if(asset.id==='sci-door')art='<path d="M140 70h220v260H140z" fill="#8393aa"/><path d="M164 94h172v236H164z" fill="#273748"/><path d="M170 100h73v230h-73zm87 0h73v230h-73z" fill="#566b83"/><path d="M213 120h10v55h-10zm64 0h10v55h-10z" fill="#a7ded6"/><path d="M232 204h13v24h-13zm23 0h13v24h-13z" fill="#b7cad8"/>';
+  else if(asset.type==='textures'){for(let y=70;y<335;y+=28)for(let x=65;x<440;x+=48)art+=`<rect x="${x+(y%56?12:0)}" y="${y}" width="44" height="24" rx="${asset.id==='slate-material'?4:1}" fill="${((x+y)%3)?'#6b7984':'#9aa5ab'}" stroke="#bac3c8" stroke-opacity=".2"/>`;}
+  else if(asset.type==='audio'){art='<circle cx="250" cy="185" r="114" fill="#2d3547" stroke="#768098"/>';for(let i=0;i<33;i++){const h=18+Math.abs(Math.sin(i*.7))*68;art+=`<rect x="${88+i*10}" y="${185-h/2}" width="5" height="${h}" rx="3" fill="${color}"/>`;}art+='<path d="M105 290h290" stroke="#727e8c"/><circle cx="190" cy="290" r="6" fill="#d2dbe1"/>';}
+  else if(asset.type==='plugins'){art=`<rect x="90" y="68" width="320" height="258" rx="12" fill="#222c39" stroke="#6d7b8e"/><path d="M90 104h320M300 105v220" stroke="#6d7b8e"/><circle cx="108" cy="85" r="4" fill="#acb9c6"/><path d="M126 85h95M318 132h68M318 154h48M318 190h68M318 212h48" stroke="#98aabd" stroke-width="5"/><rect x="138" y="145" width="104" height="105" rx="6" fill="${color}" fill-opacity=".25" stroke="${color}" stroke-width="2"/><path d="M190 125v145M117 197h145" stroke="${color}" stroke-dasharray="5 5"/>`;}
+  else {
+    const shapes={Hats:'<path d="M155 210q0-100 95-100t95 100z"/><path d="M145 211q90-20 215 5l38 20q-121 20-253-2z"/>',Shirts:'<path d="m190 100-75 50 45 65 27-18v117h126V197l27 18 45-65-75-50q-60 45-120 0z"/>',Pants:'<path d="M170 100h160l-5 215h-67l-8-145-8 145h-67z"/>',Shoes:'<path d="m117 190 92-45 25 71 76 27q25 11 16 35H118z"/><path d="m262 166 65-30 24 70 50 33q20 18 5 32h-64"/>',Shoulders:'<rect x="185" y="105" width="130" height="125" rx="28"/><path d="M175 149h-25v45h25m150-45h25v45h-25M214 240v47m71-47v47"/><path d="M211 149h78v38h-78" fill="#293c49"/>',Back:'<rect x="166" y="100" width="168" height="209" rx="32"/><path d="M166 140q-42 35-14 105m182-105q42 35 14 105M206 100V80h88v20M190 195h120v78H190z"/>',Neck:'<path d="M140 100q-25 175 110 205 135-30 110-205" fill="none" stroke-width="18"/><path d="m250 258 32 32-32 33-32-33z"/>'};
+    art=`<g fill="${color}" stroke="#d3dbe1" stroke-width="3" stroke-linejoin="round">${shapes[asset.subcategory]||shapes.Hats}</g>`;
+  }
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400"><defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#283744"/><stop offset="1" stop-color="#19212c"/></linearGradient><pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0v30" fill="none" stroke="#c0cbd5" stroke-opacity=".04"/></pattern></defs><rect width="500" height="400" fill="url(#bg)"/><rect width="500" height="400" fill="url(#grid)"/><ellipse cx="250" cy="335" rx="178" ry="18" fill="#0e1621" fill-opacity=".4"/>${art}</svg>`;
+  await writeFile('public/art/assets/'+asset.id+'.svg',svg);
+}
+console.log('Generated '+assets.length+' asset concept previews.');

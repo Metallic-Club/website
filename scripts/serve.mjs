@@ -14,8 +14,8 @@ return http.createServer(async (req, res) => {
     let url = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     if (url === '/') url = '/index.html';
     // Serve application assets only; never expose repository metadata or local config.
-    const versioned=production&&/^\/assets\/[a-f0-9]{12}\/(?:src\/[\w-]+\.js|styles\.css|art\/[\w-]+\.svg|favicon\.svg)$/.test(url);
-    if (!(versioned || url === '/index.html' || url === '/favicon.svg' || /^\/src\/[\w-]+\.(js|css)$/.test(url) || /^\/art\/[\w-]+\.svg$/.test(url))) {
+    const versioned=production&&/^\/assets\/[a-f0-9]{12}\/(?:src\/[\w-]+\.js|styles\.css|art\/(?:assets\/)?[\w-]+\.svg|favicon\.svg)$/.test(url);
+    if (!(versioned || url === '/index.html' || url === '/favicon.svg' || /^\/src\/[\w-]+\.(js|css)$/.test(url) || /^\/art\/(?:assets\/)?[\w-]+\.svg$/.test(url))) {
       res.writeHead(404).end('Not found'); return;
     }
     if (!production && (url.startsWith('/art/') || url === '/favicon.svg')) url = '/public' + url;
