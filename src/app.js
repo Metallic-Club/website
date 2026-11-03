@@ -1,3 +1,6 @@
+import {createGroupNewsUI} from './group-news-ui.js';
+import {groupNewsNotifications} from './group-news.js';
+import {createAccountLinksUI} from './account-links-ui.js';
 import {accountBadges,normalizeYoutubeUrl} from './account-roles.js';
 import {profilePermissions,privacyFormFields,privacyFromForm} from './privacy.js';
 import {formatPlaytime,playerGameProgress,playedGames,progressTotals} from './game-progress.js';
@@ -15,7 +18,7 @@ import {presenceFor,activityFor} from './presence.js';
 import { loadState, saveState, filterGames, updateFriendship, escapeHtml as esc } from './store.js';
 import { readRoute, routeWithParams, categories, friendTabs } from './router.js';
 import {portrait,genericAvatar,community,personInfo} from './avatar.js';
-import { SERVER_PRICE, groupRole, groupsForProfile, friendActivity, groupCategories, getGroups, findGroup, groupMembers, ownerForGame, friendsPlaying, friendSessions, sampleServers, serverAccess, friendJoinAccess, createServerPreview, reservedServerCards, updateGroupMembership } from './social.js';
+import { SERVER_PRICE, groupMemberSections, groupRole, groupsForProfile, friendActivity, groupCategories, getGroups, findGroup, groupMembers, ownerForGame, friendsPlaying, friendSessions, sampleServers, serverAccess, friendJoinAccess, createServerPreview, reservedServerCards, updateGroupMembership } from './social.js';
 import { genres, cosmeticSlots, creatorTypes, settingsSections, gameDetails, recommendGames, recommendationGenres, discoverGames, connections, mutualFriends, sampleFavorites, marketplaceAssets, assetMatches } from './platform.js';
 
 let storage;
@@ -66,7 +69,7 @@ const icons = {
   alloy: '<path d="m12 2 9 5v10l-9 5-9-5V7zM12 7l4 2v6l-4 2-4-2V9z"/>',
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
   friends: '<circle cx="9" cy="8" r="3"/><path d="M2 21v-3a7 7 0 0 1 14 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 4 5"/>',
-  settings: '<path d="m9 3-1 3-3 1v4l2 1-2 2v4l3 1 1 3h6l1-3 3-1v-4l-2-2 2-1V7l-3-1-1-3z"/><circle cx="12" cy="12" r="3"/>',
+  settings: '<path d="M19.46 9.72L21.78 9.92L21.78 14.08L19.46 14.28L18.89 15.66L20.39 17.45L17.45 20.39L15.66 18.89L14.28 19.46L14.08 21.78L9.92 21.78L9.72 19.46L8.34 18.89L6.55 20.39L3.61 17.45L5.11 15.66L4.54 14.28L2.22 14.08L2.22 9.92L4.54 9.72L5.11 8.34L3.61 6.55L6.55 3.61L8.34 5.11L9.72 4.54L9.92 2.22L14.08 2.22L14.28 4.54L15.66 5.11L17.45 3.61L20.39 6.55L18.89 8.34Z"/><circle cx="12" cy="12" r="3.2"/>',
   download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
   search: '<circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>',
   bell: '<path d="M18 8a6 6 0 0 0-12 0v6l-2 4h16l-2-4zM10 21h4"/>',
@@ -236,10 +239,12 @@ function profile() {
   const favorites=games.filter(game=>(own?state.favorites:(sampleFavorites[name]||[])).includes(game.id));
   const publishedCreations=games.filter(game=>{const owner=ownerForGame(game.id);return owner.type==='user'&&owner.id===name;});
   const favoritePage=pageWindow(favorites,params.get('favoritePage'));
+  const profileActivity=!own&&presenceFor(state,name).key==='playing'?friendActivity(state,name):null;
+  const profileJoin=profileActivity?.access.allowed?button('join-friend',icon('play',18)+' Join game','button play-button',`data-name="${esc(name)}"`):'';
   const friendAction=state.friends.includes(name)?button('remove-friend','Friends '+icon('check',16),'button',`data-name="${esc(name)}"`):state.requests.includes(name)?button('accept-friend','Accept request','button primary',`data-name="${esc(name)}"`):state.outgoing.includes(name)?button('cancel-friend','Cancel request','button',`data-name="${esc(name)}"`):button('add-friend','Add friend','button primary',`data-name="${esc(name)}"`);
   return `${preview}<section class="profile-cover"><div class="cover-mark">M</div><span class="eyebrow">${own?'YOUR CORNER OF METALLIC':'PLAYER PROFILE'}</span></section>
     <section class="profile-header">${own?avatar(0,'profile-avatar'):referenceAvatar(person.avatar,'profile-avatar')}<div><h1>${accountName(name)}</h1><p>@${esc(name)} <span class="profile-online">${activityText(name)}</span></p>
-    ${!own&&access.friends?`<a class="mutual-summary" href="#/profile?user=${encodeURIComponent(name)}&friends=mutual"><span>${mutual.length} mutual friend${mutual.length===1?'':'s'}</span></a>`:''}</div><div class="profile-header-action">${own?link('settings?section=account','Edit profile','button'):friendAction}</div></section>
+    ${!own&&access.friends?`<a class="mutual-summary" href="#/profile?user=${encodeURIComponent(name)}&friends=mutual"><span>${mutual.length} mutual friend${mutual.length===1?'':'s'}</span></a>`:''}</div><div class="profile-header-action">${own?link('settings?section=account','Edit profile','button'):friendAction}${profileJoin}</div></section>
     <div class="account-profile-layout"><div class="profile-main-column">
     ${access.friends?profileFriends(friends,own,mutual,params.get('friends')==='mutual',!!viewAs):privateProfileSection('Friends list')}
     ${access.favorites?`<section class="profile-section"><div class="section-top"><h2>Favorite games <span class="muted">(${favorites.length})</span></h2>${own?link('explore','Find more →','view-all'):''}</div>${favorites.length?`<div class="game-grid profile-games">${favoritePage.items.map(card).join('')}</div>`:'<div class="inline-empty">No favorite games yet.'+(own?' '+link('explore','Find your next favorite →','text-link'):'')+'</div>'}${pageLinks(favoritePage,'favorite games','favoritePage')}</section>`:privateProfileSection('Favorite games')}
@@ -276,7 +281,8 @@ function settings() {
   const section=Object.hasOwn(settingsSections,params.get('section'))?params.get('section'):'account';
   let content='';
   if(section==='themes')content=themesPage(appearance);
-  if(section==='account')content=settingsForm(section,`<label for="setting-name">Username</label><input id="setting-name" name="name" aria-label="Username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(state.profile.name)}"><small class="field-hint">3–20 letters, numbers, or underscores.</small><label for="setting-bio">Bio</label><textarea id="setting-bio" name="bio" maxlength="240" rows="4">${esc(state.profile.bio)}</textarea><small class="field-hint">A little about you, in 240 characters or less.</small><label for="setting-youtube">YouTube channel</label><input id="setting-youtube" name="youtubeUrl" type="url" maxlength="200" placeholder="https://www.youtube.com/@yourchannel" value="${esc(state.profile.youtubeUrl||'')}"><small class="field-hint">Add a channel link to your profile. The YouTuber icon requires verified channel ownership and over 100,000 subscribers. Channel verification is not connected in this preview.</small><div class="account-readonly"><span>Sign-in email</span><strong>Available with live accounts</strong></div>`);
+  if(section==='connections')content=settingsForm(section,accountLinks.fields());
+  if(section==='account')content=settingsForm(section,`<label for="setting-name">Username</label><input id="setting-name" name="name" aria-label="Username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" value="${esc(state.profile.name)}"><small class="field-hint">3–20 letters, numbers, or underscores.</small><label for="setting-bio">Bio</label><textarea id="setting-bio" name="bio" maxlength="240" rows="4">${esc(state.profile.bio)}</textarea><small class="field-hint">A little about you, in 240 characters or less.</small>${link('settings?section=connections','Manage linked accounts →','text-link')}<div class="account-readonly"><span>Sign-in email</span><strong>Available with live accounts</strong></div>`);
   if(section==='privacy')content=settingsForm(section,`<label for="setting-visibility">Who can view my profile?</label><select id="setting-visibility" name="visibility">${['Everyone','Friends only','Only me'].map(v=>`<option ${state.profile.visibility===v?'selected':''}>${v}</option>`).join('')}</select>${privacyFormFields(state.privacy)}<h3>Interactions</h3><label for="setting-friend-policy">Who can send me friend requests?</label><select id="setting-friend-policy" name="friendPolicy">${['Everyone','Friends of friends','Nobody'].map(v=>`<option ${state.friendPolicy===v?'selected':''}>${v}</option>`).join('')}</select><label for="setting-join-policy">Who can join me in games?</label><select id="setting-join-policy" name="joinPolicy">${['Everyone','Friends','Nobody'].map(value=>`<option ${state.joinPolicy===value?'selected':''}>${value}</option>`).join('')}</select><label class="toggle-row"><span><strong>Show my activity</strong><small>Let friends see what I’m playing.</small></span><input type="checkbox" name="activity" role="switch" ${state.activity?'checked':''}></label><p class="fine-print">Preferences are saved in this browser. Live account privacy is not connected yet. ${link('profile?viewAs=others','Preview my profile →','text-link')}</p>`);
   if(section==='notifications')content=settingsForm(section,`<label class="toggle-row"><span><strong>Friend requests</strong><small>See incoming friend requests in your inbox.</small></span><input name="notifications" type="checkbox" role="switch" ${state.notifications?'checked':''}></label><label class="toggle-row"><span><strong>Platform updates</strong><small>See welcome messages and platform announcements.</small></span><input name="updates" type="checkbox" role="switch" ${state.updateNotifications?'checked':''}></label><div class="settings-info">${icon('bell',20)}<p>Notifications open from the bell in the top right. These preferences control your preview inbox.</p></div>`);
   if(section==='discovery')content=settingsForm(section,`<fieldset class="genre-preferences"><legend>What do you like to play?</legend><p>Pick a few genres. Your favorites also help shape your recommendations.</p><div>${genres.map(genre=>`<label><input name="genres" type="checkbox" value="${genre}" ${state.preferredGenres.includes(genre)?'checked':''}><span>${genre}</span></label>`).join('')}</div></fieldset><div class="settings-info">${icon('explore',20)}<p>${state.hiddenGames.length} hidden games. Hidden games stay out of your recommendations.</p></div>${state.hiddenGames.length?button('reset-hidden','Restore hidden games','button small'):''}`);
@@ -303,6 +309,7 @@ function friends() {
 function notFound() { return `${pageHead('Page not found','This world is still uncharted.')}${empty('Let’s get you back to exploring.','The page you’re looking for doesn’t exist.',link('home','Back to Home'))}`; }
 function notificationItems() {
   return [
+    ...groupNewsNotifications(state),
     ...(state.notifications?state.requests.map(name=>({id:'request-'+name,title:`${name} sent you a friend request`,description:'Find your next adventure together.',to:'friends?tab=requests',name})):[]),
     ...(state.updateNotifications?[{id:'welcome',title:'Welcome to Metallic',description:'Your friends, games, and creations in one place.',to:'home'}]:[]),
   ];
@@ -315,7 +322,7 @@ function updateNotificationPopover(open=notificationsOpen) {
   toggle?.querySelector('.notification-dot')?.remove();
   if(unread)toggle?.insertAdjacentHTML('beforeend','<span class="notification-dot"></span>');
   popover.innerHTML=`<div class="notification-popover-head"><div><h2>Notifications</h2><span>${unread} unread</span></div>${button('close-notifications',icon('close',17),'plain-icon','aria-label="Close notifications"')}</div>
-    ${items.length?`<div class="notification-list">${items.map(item=>`<a class="notification-entry ${state.readNotifications.includes(item.id)?'read':''}" href="#/${item.to}" data-action="read-notification" data-id="${item.id}">${item.name?referenceAvatar(personInfo(item.name).avatar):`<span class="notification-symbol">${icon('bell',19)}</span>`}<span><strong>${esc(item.title)}</strong><small>${item.description}</small></span>${!state.readNotifications.includes(item.id)?'<i></i>':''}</a>`).join('')}</div>`:'<div class="notification-empty">'+icon('bell',30)+'<h3>You’re all caught up</h3><p>Your notifications will appear here.</p></div>'}
+    ${items.length?`<div class="notification-list">${items.map(item=>`<a class="notification-entry ${state.readNotifications.includes(item.id)?'read':''}" href="#/${item.to}" data-action="read-notification" data-id="${item.id}">${item.name?referenceAvatar(personInfo(item.name).avatar):`<span class="notification-symbol">${icon('bell',19)}</span>`}<span><strong>${esc(item.title)}</strong><small>${esc(item.description)}</small></span>${!state.readNotifications.includes(item.id)?'<i></i>':''}</a>`).join('')}</div>`:'<div class="notification-empty">'+icon('bell',30)+'<h3>You’re all caught up</h3><p>Your notifications will appear here.</p></div>'}
     ${allItems.length>20?link('friends?tab=requests','View all friend requests →','notification-more'):''}<div class="notification-popover-footer">${button('read-all-notifications','Mark all as read','text-button',unread?'':'disabled')}${link('settings?section=notifications','Preferences','text-link')}</div>`;
 }
 function profileFriends(names, owner, mutual=[], mutualOnly=false, preview=false) {
@@ -375,13 +382,13 @@ function groupsPage() {
 }
 function groupPage() {
   const group=findGroup(state,route.split('/')[1]);if(!group)return notFound();
-  const members=groupMembers(group,state), tab=['about','games','members'].includes(params.get('tab'))?params.get('tab'):'about';
-  const memberPage=pageWindow(members,params.get('memberPage'));
+  const members=groupMembers(group,state), tab=['about','games','members','news'].includes(params.get('tab'))?params.get('tab'):'about';
   const published=games.filter(game=>group.games.includes(game.id));
-  return `${link('groups','← All groups','text-link')}<section class="group-cover group-color-${group.color}"><span>GROUP · ${group.category.toUpperCase()}</span><div>${esc(group.emblem)}</div></section><header class="group-profile-header">${groupEmblem(group,'large')}<div><h1>${esc(group.name)}</h1><p>By ${link('profile?user='+encodeURIComponent(group.owner),esc(group.owner),'text-link')} <span>· ${members.length} members</span></p></div><div>${groupAction(group)}</div></header><nav class="group-detail-tabs" aria-label="Group sections">${[['about','About'],['games','Games ('+(published.length)+')'],['members','Members ('+members.length+')']].map(([value,label])=>link('groups/'+group.id+(value==='about'?'':'?tab='+value),label,tab===value?'selected':'')).join('')}</nav>
+  return `${link('groups','← All groups','text-link')}<section class="group-cover group-color-${group.color}"><span>GROUP · ${group.category.toUpperCase()}</span><div>${esc(group.emblem)}</div></section><header class="group-profile-header">${groupEmblem(group,'large')}<div><h1>${esc(group.name)}</h1><p>By ${link('profile?user='+encodeURIComponent(group.owner),esc(group.owner),'text-link')} <span>· ${members.length} members</span></p></div><div>${groupAction(group)}</div></header><nav class="group-detail-tabs" aria-label="Group sections">${[['about','About'],['games','Games ('+(published.length)+')'],['news','News'],['members','Members ('+members.length+')']].map(([value,label])=>link('groups/'+group.id+(value==='about'?'':'?tab='+value),label,tab===value?'selected':'')).join('')}</nav>
     ${tab==='about'?`<div class="group-about-layout"><section><div class="group-announcement"><span class="eyebrow">GROUP SHOUT</span><p>${esc(group.shout)}</p><span>From ${esc(group.shoutBy||group.owner)}</span></div><section class="panel group-description"><h2>About this group</h2><p>${esc(group.description)||'Tell your members what brings this group together.'}</p><div class="group-facts"><div><span>Interest</span><strong>${group.category}</strong></div><div><span>Membership</span><strong>${group.joinPolicy==='approval'?'Approval required':'Open to everyone'}</strong></div></div></section></section><aside class="panel group-build-together">${icon('create',30)}<h2>Create as a group</h2><p>Give your next game a home, with your group as its creator.</p>${canGroup(group,state.profile.name,'createGames')?link('create?tab=templates&group='+group.id,'Choose a game template','button primary full'):'<p class="fine-print">Your role needs permission to create group games.</p>'}</aside></div>`:''}
     ${tab==='games'?`<div class="section-top"><div><h2>Group games</h2><p class="section-sub">Worlds made by ${esc(group.name)}.</p></div>${canGroup(group,state.profile.name,'createGames')?link('create?tab=templates&group='+group.id,'Choose a template','button small'):''}</div>${published.length?`<div class="game-grid">${published.map(card).join('')}</div>`:empty('No published games yet.','Start with a local template and build your game in Studio.')}`:''}
-    ${tab==='members'?`<div class="section-top"><h2>Members</h2><span class="muted small-text">Community roles</span></div><div class="group-member-grid">${memberPage.items.map(name=>`<a class="group-member-card" href="#/profile?user=${encodeURIComponent(name)}">${name===state.profile.name?avatar():referenceAvatar(personInfo(name).avatar)}<strong>${accountName(name)}</strong><span>${esc(groupRole(group,name))}</span></a>`).join('')}</div>${pageLinks(memberPage,'group members','memberPage')}`:''}<p class="fine-print">${group.mine?'Your group is a browser-local preview. Live collaboration and publishing are not connected.':'Sample group. Joining or requesting membership does not send a message to real people.'}</p>`;
+    ${tab==='news'?groupNews.page(group):''}
+    ${tab==='members'?groupMemberSections(group,state).map((section,index)=>{const page=pageWindow(section.members,params.get('rolePage-'+index));return `<section class="member-role-section"><div class="section-top"><h2>${esc(section.name)} <span class="muted">(${section.members.length})</span></h2></div><ul class="role-member-list">${page.items.map(name=>`<li><a href="#/profile?user=${encodeURIComponent(name)}">${name===state.profile.name?avatar():referenceAvatar(personInfo(name).avatar)}<span><strong>${accountName(name)}</strong><small>${activityText(name)}</small></span></a></li>`).join('')}</ul>${pageLinks(page,section.name+' members','rolePage-'+index)}</section>`;}).join(''):''}<p class="fine-print">${group.mine?'Your group is a browser-local preview. Live collaboration and publishing are not connected.':'Sample group. Joining or requesting membership does not send a message to real people.'}</p>`;
 }
 function groupEditor(existing) {
   modal(existing?'Manage your group':'Create a group',`<p class="muted">A place for a shared interest or your next group game.</p><form id="group-form" data-id="${existing?.id||''}"><label for="group-name">Group name</label><input id="group-name" name="name" required minlength="3" maxlength="40" value="${esc(existing?.name||'')}" placeholder="Give your community a name"><label for="group-description">Description</label><textarea id="group-description" name="description" rows="3" maxlength="500" placeholder="What brings your group together?">${esc(existing?.description||'')}</textarea><label for="group-category">Shared interest</label><select id="group-category" name="category">${groupCategories.map(category=>`<option ${existing?.category===category||!existing&&category==='Creating'?'selected':''}>${category}</option>`).join('')}</select><label for="group-membership">Membership</label><select id="group-membership" name="joinPolicy"><option value="open" ${existing?.joinPolicy!=='approval'?'selected':''}>Open — anyone can join</option><option value="approval" ${existing?.joinPolicy==='approval'?'selected':''}>Approval — request to join</option></select><p class="fine-print">Your group is saved locally. Invitations, shared editing, and publishing will connect with the live platform.</p><button type="submit" class="button primary full">${existing?'Save group':'Create group'}</button></form>`);
@@ -406,6 +413,8 @@ function restoreFocus(identity) {
 const workspaceContext={state:()=>state,params:()=>params,route:()=>route,icon,link,button,pageHead,pageLinks,empty,notFound,modal,dialog,navigate,render,persist,toast,groupEmblem,accountName,save:()=>saveState(storage,state)};
 const creatorWorkspace=createCreatorWorkspace(workspaceContext);
 const groupControls=createGroupControls(workspaceContext);
+const groupNews=createGroupNewsUI(workspaceContext);
+const accountLinks=createAccountLinksUI({...workspaceContext,isSettingsDirty:()=>settingsDirty},document.querySelector('meta[name="metallic-connections-api"]')?.content||'');
 function render(preserveFocus=true) {
   closeFriendPreview();
   const focus=preserveFocus?focusIdentity():null;
@@ -422,10 +431,12 @@ function render(preserveFocus=true) {
   app.innerHTML=shell(page(),['','login','signup'].includes(route));
   syncSidebarState();
   creatorWorkspace.mountPreviews();
+  accountLinks.mount();
   if(route==='settings')settingsDirty=false;
   updateShelfControls();
   if(editing&&document.querySelector('#site-search'))document.querySelector('#site-search').value=editing.value;
   restoreFocus(focus);
+  if(!preserveFocus&&route.startsWith('groups/')&&params.get('tab')==='news'&&params.get('post'))document.getElementById('news-post-'+params.get('post'))?.scrollIntoView({block:'start'});
 }
 function navigate(destination) {
   if(location.hash==='#'+destination)render(); else location.hash=destination;
@@ -557,6 +568,8 @@ document.addEventListener('click',async e=>{
   const {action,value,id,name}=el.dataset;
   if(await creatorWorkspace.handleAction(action,el))return;
   if(groupControls.handleAction(action,el))return;
+  if(groupNews.handleAction(action,el))return;
+  if(await accountLinks.handleAction(action,el))return;
   switch(action){
     case 'theme-mode':if(['dark','light','system'].includes(value))setAppearance({mode:value});break;
     case 'theme-accent':setAppearance({accent:value});break;
@@ -621,18 +634,20 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
   const form=e.target;
-  if(!['docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
+  if(!['docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
   e.preventDefault();if(!form.reportValidity())return;
   const data=new FormData(form);
   if(form.id==='docs-search-form'){navigate('/docs'+(data.get('q').trim()?'?q='+encodeURIComponent(data.get('q').trim()):''));return;}
   if(form.id==='search-form'){closeSuggestions();navigate(routeWithParams('search',new URLSearchParams(),{q:data.get('q').trim()}));}
   if(form.id==='friend-search')setQuery({person:data.get('person').trim()});
   if(form.id==='auth-form'){if(route==='signup')state.profile.name=data.get('username');form.reset();persist('Welcome to the preview. No live account was created.');navigate('/home');}
+  if(form.id==='group-news-form'){groupNews.submit(form);return;}
   if(form.id==='creator-upload-form'){await creatorWorkspace.importAsset(form);return;}
   if(['group-profile-form','group-shout-form','group-role-form','group-add-member-form'].includes(form.id)||form.dataset.groupMember){await groupControls.submit(form);return;}
   if(form.id==='settings-form'){
     const section=form.dataset.section;
-    if(section==='account'){const rawChannel=data.get('youtubeUrl')?.trim()||'',youtubeUrl=normalizeYoutubeUrl(rawChannel);if(rawChannel&&!youtubeUrl){toast('Enter a YouTube channel or handle URL.');return;}state.profile.name=data.get('name');state.profile.bio=data.get('bio').trim();state.profile.youtubeUrl=youtubeUrl;}
+    if(section==='account'){state.profile.name=data.get('name');state.profile.bio=data.get('bio').trim();}
+    if(section==='connections'){const rawChannel=data.get('youtubeUrl')?.trim()||'',youtubeUrl=normalizeYoutubeUrl(rawChannel);if(rawChannel&&!youtubeUrl){toast('Enter a YouTube channel or handle URL.');return;}state.profile.youtubeUrl=youtubeUrl;}
     if(section==='privacy'){state.profile.visibility=data.get('visibility');state.privacy=privacyFromForm(data);state.friendPolicy=data.get('friendPolicy');state.joinPolicy=data.get('joinPolicy');state.activity=data.has('activity');}
     if(section==='notifications'){state.notifications=data.has('notifications');state.updateNotifications=data.has('updates');}
     if(section==='discovery')state.preferredGenres=data.getAll('genres').filter(genre=>genres.includes(genre));

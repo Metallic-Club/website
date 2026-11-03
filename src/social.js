@@ -153,3 +153,13 @@ export function normalizeSocialState(data, state) {
       }));
   }
 }
+
+export function groupMemberSections(group,state){
+  const buckets=new Map();
+  for(const name of groupMembers(group,state)){
+    const role=groupRole(group,name),rank=name===group.owner?255:(group.roleDefinitions||[]).find(item=>item.name===role)?.rank|| (role==='Member'?1:2);
+    if(!buckets.has(role))buckets.set(role,{name:role,rank,members:[]});
+    buckets.get(role).members.push(name);
+  }
+  return [...buckets.values()].sort((a,b)=>b.rank-a.rank||a.name.localeCompare(b.name));
+}
