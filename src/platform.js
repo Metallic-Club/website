@@ -27,6 +27,25 @@ export const gameDetails = {
   '12': { mood: 'Competitive', mode: 'Solo', tags: ['Strategy', 'Combat', 'Tactics'] },
   '13': { mood: 'Relaxed', mode: 'Co-op', tags: ['Farming', 'Building', 'Nature'] },
   '14': { mood: 'Competitive', mode: 'Multiplayer', tags: ['Teamwork', 'Combat', 'Arena'] },
+  '15': { mood: "Immersive", mode: "Co-op", tags: ["Coast", "Exploration", "Islands"] },
+  '16': { mood: "Immersive", mode: "Co-op", tags: ["Caves", "Puzzles", "Exploration"] },
+  '17': { mood: "Immersive", mode: "Co-op", tags: ["Snow", "Survival", "Exploration"] },
+  '18': { mood: "Competitive", mode: "Multiplayer", tags: ["Castles", "PvP", "Teamwork"] },
+  '19': { mood: "Quick play", mode: "Co-op", tags: ["Sci-fi", "Puzzles", "Teamwork"] },
+  '20': { mood: "Competitive", mode: "Co-op", tags: ["Defense", "Strategy", "Crystals"] },
+  '21': { mood: "Quick play", mode: "Solo", tags: ["Parkour", "Clouds", "Challenge"] },
+  '22': { mood: "Quick play", mode: "Multiplayer", tags: ["Lava", "Platformer", "Challenge"] },
+  '23': { mood: "Immersive", mode: "Solo", tags: ["Space", "Gravity", "Parkour"] },
+  '24': { mood: "Relaxed", mode: "Co-op", tags: ["Building", "Boats", "Creative"] },
+  '25': { mood: "Immersive", mode: "Solo", tags: ["Industry", "Space", "Management"] },
+  '26': { mood: "Relaxed", mode: "Co-op", tags: ["Gardening", "Building", "Nature"] },
+  '27': { mood: "Social", mode: "Multiplayer", tags: ["Town", "Hangout", "Roleplay"] },
+  '28': { mood: "Social", mode: "Multiplayer", tags: ["Beach", "Hangout", "Roleplay"] },
+  '29': { mood: "Social", mode: "Multiplayer", tags: ["Trains", "City", "Roleplay"] },
+  '30': { mood: "Competitive", mode: "Multiplayer", tags: ["Cars", "Rally", "Mountains"] },
+  '31': { mood: "Quick play", mode: "Multiplayer", tags: ["Karts", "Racing", "Time trials"] },
+  '32': { mood: "Competitive", mode: "Multiplayer", tags: ["Space", "Racing", "Speed"] },
+
 };
 export function recommendationGenres(catalog, state) {
   const weights = new Map((state.preferredGenres || []).map(genre => [genre, 5]));

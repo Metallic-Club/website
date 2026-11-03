@@ -1,3 +1,4 @@
+import {sampleAccounts} from './sample-accounts.js';
 import { escapeHtml as esc } from './store.js';
 export function portrait(state, cls = '', label = 'Your saved avatar') {
   const hair = state.outfit === 'Explorer' ? '#787453' : state.outfit === 'Streetwear' ? '#4c354f' : '#26313c';
@@ -14,14 +15,5 @@ export function portrait(state, cls = '', label = 'Your saved avatar') {
     ${state.accessory === 'Headphones' ? '<path d="M22 44V30a28 28 0 0 1 56 0v14" fill="none" stroke="#252a34" stroke-width="7"/><rect x="18" y="34" width="10" height="23" rx="4" fill="#b2bdd0"/><rect x="72" y="34" width="10" height="23" rx="4" fill="#b2bdd0"/>' : ''}
   </svg>`;
 }
-export const community = [
-  { name: 'heroX_x', avatar: 1, activity: 'Playing Cyber Raven', game: '1', bio: 'Always up for one more adventure.' },
-  { name: 'CRIMSONSLAYER', avatar: 2, activity: 'Playing Cyber Raven', game: '1', bio: 'Exploring worlds and chasing high scores.' },
-  { name: '00RIP_INDRA', avatar: 3, activity: 'Playing Rift Hunters', game: '3', bio: 'New worlds. New challenges.' },
-  { name: 'PixelNova', avatar: 1, activity: 'Offline', bio: 'Making small worlds with big ideas.' },
-  { name: 'CloudBuilder', avatar: 2, activity: 'Using Studio', bio: 'Building something new every day.' },
-  { name: 'LunaBlocks', avatar: 3, activity: 'Online', bio: 'Here for the adventures and the people.' },
-  { name: 'NeonFox', avatar: 1, activity: 'Offline', bio: 'Racing into the next chapter.' },
-  { name: 'OrbitKai', avatar: 2, activity: 'Online', bio: 'See you among the stars.' },
-];
+export const community = sampleAccounts;
 export const personInfo = name => community.find(p => p.name === name) || { name, avatar: 1, activity: 'Offline', bio: 'A member of the preview community.' };

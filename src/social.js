@@ -1,3 +1,4 @@
+import {sampleAccounts} from './sample-accounts.js';
 import {normalizeGroupConfig,defaultRoles} from './group-access.js';
 import { games } from './catalog.js';
 
@@ -56,6 +57,8 @@ export function groupMembers(group, state) {
   return [...new Set([...group.members, ...((state.groupMemberships || []).includes(group.id) ? [state.profile.name] : [])])];
 }
 export function ownerForGame(id) {
+  const game=games.find(game=>game.id===id);
+  if(game?.creator)return {type:'user',id:game.creator,name:game.creator};
   if (id === '13') return { type: 'user', id: 'LunaBlocks', name: 'LunaBlocks' };
   const group = sampleGroups.find(group => group.games.includes(id)) || sampleGroups[0];
   return { type: 'group', id: group.id, name: group.name };
@@ -65,6 +68,7 @@ export const friendSessions = [
   { name: 'heroX_x', gameId: '1', serverId: '1-public-1', joinsEnabled: true },
   { name: 'CRIMSONSLAYER', gameId: '1', serverId: '1-public-2', joinsEnabled: false },
   { name: '00RIP_INDRA', gameId: '3', serverId: '3-public-1', joinsEnabled: true },
+  ...sampleAccounts.filter(person=>person.game&&!['heroX_x','CRIMSONSLAYER','00RIP_INDRA'].includes(person.name)).map(person=>({name:person.name,gameId:person.game,serverId:person.game+'-public-1',joinsEnabled:true})),
 ];
 export const friendsPlaying = (state, gameId) => friendSessions.filter(session => session.gameId === gameId && state.friends.includes(session.name));
 export function sampleServers(gameId) {
