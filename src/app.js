@@ -98,7 +98,7 @@ function presenceDot(name) {
 const brand = () => `<a class="brand" href="${['','login','signup'].includes(route)?'#/':'#/home'}"><span class="brand-glyph">M</span><span class="brand-word">Metallic</span></a>`;
 function activityText(name,text='') {
   const status=activityFor(state,name);
-  return `<span class="activity-text" data-presence="${status.key}">${esc(text||status.text)}</span>`;
+  return `<span class="activity-text" data-presence="${status.key}">${esc(status.key==='playing'&&text?text:status.text)}</span>`;
 }
 const referenceAvatar = (_index = 0, cls = '') => genericAvatar(cls, '');
 const avatar = (index = 0, cls = '') => index === 0 ? portrait(state, cls) : referenceAvatar(index, cls);
