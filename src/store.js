@@ -1,3 +1,4 @@
+import {normalizePrivacy} from './privacy.js';
 import {normalizeAssets} from './creator-data.js';
 import {normalizeGroupConfig} from './group-access.js';
 import { games } from './catalog.js';
@@ -14,6 +15,7 @@ export const colors = [
   { value: '#24262b', name: 'Charcoal' }, { value: '#d97c47', name: 'Terracotta' },
 ];
 export const defaults = {
+  privacy: normalizePrivacy(),
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone' },
   outfit: 'Classic', color: '#394c60', accessory: 'None', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
   requests: ['PixelNova', 'CloudBuilder'], outgoing: [], notifications: true, activity: true, launcherDismissed: false,
@@ -31,6 +33,7 @@ export function loadState(storage) {
     if(typeof raw==='string'&&raw.length>512000)return state;
     const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || Array.isArray(data)) return state;
+    state.privacy = normalizePrivacy(data.privacy);
     if (Array.isArray(data.favorites)) state.favorites = unique(data.favorites, id => gameIds.has(id));
     if (Array.isArray(data.hiddenGames)) state.hiddenGames = unique(data.hiddenGames, id => gameIds.has(id));
     if (Array.isArray(data.preferredGenres)) state.preferredGenres = unique(data.preferredGenres, genre => genres.includes(genre), 6);
