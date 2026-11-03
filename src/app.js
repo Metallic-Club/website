@@ -20,6 +20,10 @@ let storage;
 try { storage = window.localStorage; } catch { storage = { getItem: () => null, setItem: () => { throw Error('Unavailable'); } }; }
 let state = loadState(storage);
 let appearance=loadAppearance(storage);
+const sidebarStorageKey='metallic-sidebar-collapsed-v1';
+let sidebarCollapsed=false;
+try{sidebarCollapsed=storage.getItem(sidebarStorageKey)==='1';}catch{}
+window.addEventListener('storage',event=>{if(event.key===sidebarStorageKey){sidebarCollapsed=event.newValue==='1';syncSidebarState();}});
 const themeMedia=window.matchMedia('(prefers-color-scheme: light)');
 function setAppearance(changes){appearance=normalizeAppearance({...appearance,...changes});applyAppearance(appearance,document.documentElement,themeMedia.matches);const saved=saveAppearance(storage,appearance);render();const status=document.querySelector('#theme-status');if(status)status.textContent=saved?'Theme preferences saved.':'Applied for this visit. Browser storage is unavailable.';}
 applyAppearance(appearance,document.documentElement,themeMedia.matches);
@@ -118,12 +122,12 @@ function shelf(title, subtitle, items, id, destination = 'explore') {
     <div class="shelf-controls">${button('scroll','‹','slide-btn',`data-target="${id}" data-direction="-1" aria-label="Scroll ${title} left"`)}${button('scroll','›','slide-btn',`data-target="${id}" data-direction="1" aria-label="Scroll ${title} right"`)}</div></div></div>
     <div class="card-scroller" id="${id}" tabindex="0" role="region" aria-label="${title} games">${items.slice(0,8).map(card).join('')}</div></section>`;
 }
-function navItem(id, label) { return `<a class="side-link ${(route === id || route.startsWith(id+'/')) ? 'active' : ''}" href="#/${id}" ${(route === id || route.startsWith(id+'/')) ? 'aria-current="page"' : ''}>${icon(id)}<span>${label}</span>${id === 'friends' && state.requests.length ? `<span class="nav-count">${state.requests.length}</span>` : ''}</a>`; }
+function navItem(id, label) { return `<a class="side-link ${(route === id || route.startsWith(id+'/')) ? 'active' : ''}" href="#/${id}" title="${esc(label)}" ${(route === id || route.startsWith(id+'/')) ? 'aria-current="page"' : ''}>${icon(id)}<span>${label}</span>${id === 'friends' && state.requests.length ? `<span class="nav-count">${state.requests.length}</span>` : ''}</a>`; }
 function shell(content, publicPage = false) {
   const primary=[['home','Home'],['explore','Explore'],['wardrobe','Wardrobe']];
   const mainNav=primary.map(([id,label])=>`<a href="#/${id}" class="${route===id?'active':''}" ${route===id?'aria-current="page"':''}>${label}</a>`).join('');
   const unread=notificationItems().filter(item=>!state.readNotifications.includes(item.id)).length;
-  return `<header class="topbar">${!publicPage?button('menu',icon('menu'),'mobile-menu','aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false"'):''}${brand()}
+  return `<header class="topbar">${!publicPage?button('menu',icon('menu'),'mobile-menu sidebar-toggle','aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false"'):''}${brand()}
     <nav class="topnav" aria-label="Main navigation">${mainNav}</nav>
     ${!publicPage?`<form class="top-search" id="search-form" role="search">${icon('search',18)}<input id="site-search" name="q" type="search" placeholder="Search games, people, groups" aria-label="Search games, people, and groups" value="${esc(route==='search'?params.get('q')||'':'')}" autocomplete="off" maxlength="160" aria-controls="search-suggestions" aria-expanded="false"><button class="search-submit" type="submit" aria-label="Search">${icon('arrow',16)}</button><div id="search-suggestions" hidden aria-label="Search suggestions"></div></form>
     <div class="top-actions">${button('notifications',icon('bell')+(unread?'<span class="notification-dot"></span>':''),'plain-icon','id="notification-toggle" aria-label="Notifications" aria-controls="notification-popover" aria-expanded="false"')}<a href="#/alloy" class="wallet" title="Preview Alloy balance">${icon('alloy',19)}<span>${state.previewAlloy.toLocaleString()}</span></a><a href="#/profile" class="top-profile" aria-label="View your profile">${avatar()}<span class="username">${esc(state.profile.name)}</span></a></div>`:`<div class="top-actions">${link('login','Log in','button quiet')}${link('signup','Sign up','button primary')}</div>`}</header>
@@ -188,7 +192,7 @@ function gamePage() {
   const progress=playerGameProgress(game,progressName,state.profile.name);
   const descriptions={Adventure:'Explore the unknown, discover hidden corners, and find your own path through a world full of possibility.',Action:'Bring your best moves, take on a new challenge, and team up with friends for your next adventure.',Obby:'Jump, dodge, and find your rhythm. Every obstacle is another chance to beat your personal best.',Simulation:'Start with a little imagination and make a world your own. Build, discover, and see where your curiosity takes you.',Roleplay:'Meet up with friends, find your favorite corner of the city, and create a story that belongs to you.',Racing:'Find your line and chase the perfect lap. A new personal best is waiting around the next corner.'};
   return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><h1>${esc(game.title)}</h1><p class="game-creator">By ${creatorLink(game.id)}<span class="verified" aria-label="Sample creator">${icon('check',12)}</span></p><p>${descriptions[game.genre]}</p><div class="game-tag-row">${info.tags.map(tag=>`<span>${tag}</span>`).join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${game.playing}</strong><span>Active players</span></div><div><strong>${servers.length}</strong><span>Sample servers</span></div></div>${gameProgressSummary(game,progressName)}<div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}${button('share',icon('share',18),'button','aria-label="Share game"')}</div><p class="fine-print">Game activity, playtime, and achievements are sample data. Live gameplay is not connected.</p></div></section>
-    ${!achievementTab?gameFriends(game.id):''}<nav class="game-page-tabs" aria-label="Game sections">${link('game/'+game.id,'Overview',!serverTab&&!achievementTab?'selected':'')}${link('game/'+game.id+'?tab=achievements'+(progressName!==state.profile.name?'&user='+encodeURIComponent(progressName):''),'Achievements ('+progress.total+')',achievementTab?'selected':'')}${link('game/'+game.id+'?tab=servers','Servers ('+servers.length+')',serverTab?'selected':'')}</nav>
+    ${gameFriends(game.id)}<nav class="game-page-tabs" aria-label="Game sections">${link('game/'+game.id,'Overview',!serverTab&&!achievementTab?'selected':'')}${link('game/'+game.id+'?tab=achievements'+(progressName!==state.profile.name?'&user='+encodeURIComponent(progressName):''),'Achievements ('+progress.total+')',achievementTab?'selected':'')}${link('game/'+game.id+'?tab=servers','Servers ('+servers.length+')',serverTab?'selected':'')}</nav>
     ${achievementTab?gameAchievementDetails(game,progressName):`
     ${!serverTab?`<section class="game-about"><h2>About this game</h2><p>${descriptions[game.genre]}</p><div class="game-facts"><div><span>Creator</span><strong>${creatorLink(game.id)}</strong></div><div><span>Play style</span><strong>${info.mode}</strong></div><div><span>Mood</span><strong>${info.mood}</strong></div><div><span>Play on</span><strong>Metallic Launcher</strong></div></div></section>`:''}
     <section class="reserved-servers-section"><div class="section-top"><div><h2>Your servers <span class="muted">(${owned.length})</span></h2><p class="section-sub">Your own space, with public or invite-only access.</p></div>${button('create-server',icon('create',16)+' Create private server','button',`data-id="${game.id}"`)}</div><div class="private-server-price"><span>${icon('alloy',18)} <strong>${SERVER_PRICE} Alloy</strong><small>One-time preview creation cost</small></span><span>Preview balance: <strong>${state.previewAlloy.toLocaleString()} Alloy</strong></span></div>${owned.length?`<div class="server-list">${owned.map(serverCard).join('')}</div>`:'<div class="reserved-empty">'+icon('friends',23)+'<p>Make room for your friends. Create a server and decide who can join.</p></div>'}</section>
@@ -412,6 +416,7 @@ function render(preserveFocus=true) {
   document.body.classList.remove('nav-open');
   notificationsOpen=false;
   app.innerHTML=shell(page(),['','login','signup'].includes(route));
+  syncSidebarState();
   creatorWorkspace.mountPreviews();
   if(route==='settings')settingsDirty=false;
   updateShelfControls();
@@ -426,6 +431,14 @@ function setQuery(changes) {
   const current=readRoute(location.hash);
   if(!Object.keys(changes).every(key=>['page','friendPage','groupPage','memberPage','assetPage','profileGroupPage','favoritePage','creationPage','achievementPage'].includes(key)))changes={page:null,friendPage:null,groupPage:null,memberPage:null,assetPage:null,...changes};
   navigate(routeWithParams(current.route,current.params,changes));
+}
+function syncSidebarState() {
+  const mobile=innerWidth<=820;
+  document.body.classList.toggle('sidebar-collapsed',!mobile&&sidebarCollapsed);
+  const toggle=document.querySelector('.sidebar-toggle');if(!toggle)return;
+  const label=mobile?'Toggle navigation':sidebarCollapsed?'Expand sidebar':'Collapse sidebar';
+  toggle.setAttribute('aria-label',label);toggle.title=label;
+  toggle.setAttribute('aria-expanded',String(mobile?document.body.classList.contains('nav-open'):!sidebarCollapsed));
 }
 function setMenu(open) {
   const sidebar=document.querySelector('#sidebar');if(!sidebar)return;
@@ -548,7 +561,7 @@ document.addEventListener('click',async e=>{
     case 'copy-doc-code':{const code=document.getElementById(el.dataset.target)?.textContent;if(code)try{await navigator.clipboard.writeText(code);el.textContent='Copied';toast('Code copied.');}catch{toast('Clipboard is unavailable. Select the code to copy it.');}break;}
     case 'retry-catalog':catalog.clear();routeData.key='';render();break;
     case 'remove-filter':setQuery({[el.dataset.key]:null});break;
-    case 'menu':setMenu(!document.querySelector('#sidebar').classList.contains('open'));break;
+    case 'menu':if(innerWidth<=820)setMenu(!document.querySelector('#sidebar').classList.contains('open'));else{sidebarCollapsed=!sidebarCollapsed;try{storage.setItem(sidebarStorageKey,sidebarCollapsed?'1':'0');}catch{}syncSidebarState();}break;
     case 'close-dialog':dialog.close();break;
     case 'discard-settings':settingsDirty=false;dialog.close();navigate(value);break;
     case 'notifications':closeSuggestions();updateNotificationPopover(!notificationsOpen);if(notificationsOpen)document.querySelector('#notification-popover button')?.focus();break;
@@ -697,6 +710,6 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement&&!e.target.dataset.fallback){e.target.dataset.fallback='1';e.target.src='art/game-unavailable.svg';}},true);
 document.addEventListener('scroll',e=>{if(!e.target.closest?.('#friend-activity-popover'))closeFriendPreview();if(e.target.classList?.contains('card-scroller'))updateShelfControls();},true);
-window.addEventListener('resize',()=>{closeFriendPreview();if(innerWidth>820&&document.body.classList.contains('nav-open'))setMenu(false);updateShelfControls();});
+window.addEventListener('resize',()=>{closeFriendPreview();if(innerWidth>820&&document.body.classList.contains('nav-open'))setMenu(false);syncSidebarState();updateShelfControls();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const rect=dialog.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)dialog.close();}});
 render();

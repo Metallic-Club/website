@@ -35,7 +35,7 @@ Documentation is available at `#/docs`, with getting-started guides, three tutor
 - Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
 - Validated signup/login preview forms and accessible pack-preview dialogs.
-- Three primary top tabs, Create in the sidebar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
+- Three primary top tabs, Create in the sidebar, a persistent collapsible desktop icon rail, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
 - Unsaved settings protection and normalization of previously saved browser data.
 
 Explore filters and friend tabs survive reloads and can be bookmarked. For example: `#/explore?category=Action&sort=rating` and `#/friends?tab=sent`. Community profile previews use `#/profile?user=heroX_x`. Game servers use `#/game/1?tab=servers`; groups use `#/groups` and `#/groups/metallic-studio`.
@@ -95,3 +95,5 @@ Keep authentication, user data, wallet operations, and creator publishing behind
 GitHub Pages uses the checked production build in .github/workflows/static.yml and uploads only dist/. Public deployment runs only when repository Pages is already configured for Actions; otherwise the checked artifact is retained and deployment is skipped. The previous Jekyll workflow remains as a manual compatibility entry that delegates to that same pipeline, avoiding competing automatic deployments.
 
 Home uses a compact friends row, a shared Continue/Favorites library, and six recommendations. Popular lists and discovery filters live on Explore. Profiles group achievements by game with unlocked/total progress, per-game playtime, and a total playtime summary. Game pages include an Achievements tab. Gameplay records in src/game-progress.js are sample fixtures, not measured launcher activity.
+
+The Home friends heading sits above the avatar row. Game-page friends and join controls remain visible across Overview, Achievements, and Servers. The header menu button toggles the desktop sidebar between full labels and an icon rail; mobile retains its navigation drawer.
