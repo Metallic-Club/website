@@ -6,6 +6,7 @@ import {canGroup} from '../src/group-access.js';
 import {publishGroupNews,newsForGroup,setNewsSubscription,groupNewsNotifications} from '../src/group-news.js';
 import {createGroupNewsUI} from '../src/group-news-ui.js';
 import {createDiscordLink,validateDiscordAuthorizeUrl} from '../src/discord-link.js';
+import {createAccountLinksUI} from '../src/account-links-ui.js';
 const state=()=>loadState({getItem:()=>null});
 const response=data=>new Response(JSON.stringify(data),{headers:{'Content-Type':'application/json'}});
 const authorize=()=>new URL('https://discord.com/oauth2/authorize?client_id=123456789012345678&response_type=code&scope=identify&state='+('a'.repeat(24))+'&redirect_uri='+encodeURIComponent('https://api.example.test/oauth/discord/callback'));
@@ -57,4 +58,15 @@ test('Discord connection requests use the authenticated service and never promot
   for(const payload of [{linked:true,verified:false,discordId:'123456789012345678',username:'forged'},{linked:true,verified:true,discordId:123,username:'bad'}]){const fake=createDiscordLink({endpoint:'https://api.example.test',fetchImpl:async()=>response(payload)});await assert.rejects(fake.get());}
   assert.equal(createDiscordLink().configured,false);await assert.rejects(createDiscordLink().get());
   assert.throws(()=>createDiscordLink({endpoint:'https://user:pass@api.example.test'}));
+});
+test('late Discord responses cannot carry connection details into a different account or view',async t=>{
+  const pending=[];t.mock.method(globalThis,'fetch',()=>new Promise(resolve=>pending.push(resolve)));
+  const value=state();let route='settings';
+  const ui=createAccountLinksUI({state:()=>value,route:()=>route,params:()=>new URLSearchParams('section=connections'),isSettingsDirty:()=>false,render:()=>{},button:()=>''},'https://api.example.test');
+  ui.mount();assert.equal(pending.length,1);
+  route='home';ui.mount();value.profile.name='SecondUser';route='settings';ui.mount();assert.equal(pending.length,2);
+  pending[0](response({linked:true,verified:true,discordId:'123456789012345678',username:'OldDiscord'}));await new Promise(resolve=>setImmediate(resolve));
+  assert.doesNotMatch(ui.fields(),/OldDiscord/);
+  pending[1](response({linked:true,verified:true,discordId:'987654321098765432',username:'CurrentDiscord'}));await new Promise(resolve=>setImmediate(resolve));
+  assert.match(ui.fields(),/CurrentDiscord/);assert.doesNotMatch(ui.fields(),/OldDiscord/);
 });
