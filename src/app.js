@@ -78,6 +78,8 @@ function pageLinks(page, label='results', key='page') {
 }
 
 const icons = {
+  connections: '<path d="m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/>',
+  themes: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.5 1.5 0 0 1 1.2-2.5H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="10.5" cy="6.8" r=".8"/><circle cx="15" cy="7.5" r=".8"/><circle cx="17.5" cy="11" r=".8"/>',
   docs: '<path d="M4 3h12l4 4v14H4zM15 3v5h5M8 12h8M8 16h6"/>',
   home: '<path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/>',
   explore: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5z"/>',
@@ -295,6 +297,7 @@ function profileGroups(name,own) {
 }
 function settings() {
   const section=Object.hasOwn(settingsSections,params.get('section'))?params.get('section'):'account';
+  const sectionIcons={account:'profile',connections:'connections',themes:'themes',notifications:'bell',discovery:'explore',security:'lock'};
   let content='';
   if(section==='themes')content=themesPage(appearance);
   if(section==='connections')content=settingsForm(section,accountLinks.fields());
@@ -304,7 +307,7 @@ function settings() {
   if(section==='discovery')content=settingsForm(section,`<fieldset class="genre-preferences"><legend>What do you like to play?</legend><p>Pick a few genres. Your favorites also help shape your recommendations.</p><div>${genres.map(genre=>`<label><input name="genres" type="checkbox" value="${genre}" ${state.preferredGenres.includes(genre)?'checked':''}><span>${genre}</span></label>`).join('')}</div></fieldset><div class="settings-info">${icon('explore',20)}<p>${state.hiddenGames.length} hidden games. Hidden games stay out of your recommendations.</p></div>${state.hiddenGames.length?button('reset-hidden','Restore hidden games','button small'):''}`);
   if(section==='security')content=`<section class="panel security-section"><h2>Security</h2><p class="settings-description">Your account access, in one place.</p><div class="security-row"><span>${icon('settings',22)}<span><strong>Password</strong><small>Live account authentication is not connected.</small></span></span><button class="button small" disabled>Change password</button></div><div class="security-row"><span>${icon('check',22)}<span><strong>Two-step verification</strong><small>Available when live accounts launch.</small></span></span><span class="tag">Coming later</span></div><div class="security-row"><span>${icon('profile',22)}<span><strong>Active sessions</strong><small>This preview does not create an authenticated session.</small></span></span></div></section>`;
   if(section==='data')content=`<section class="panel"><h2>Preview data</h2><p class="settings-description">Your preview stays in this browser.</p><div class="data-summary"><div><strong>${state.favorites.length}</strong><span>Favorite games</span></div><div><strong>${state.creatorAssets.length}</strong><span>Local assets</span></div><div><strong>${state.friends.length}</strong><span>Friends</span></div></div><p class="muted small-text">Profile details, game preferences, saved looks, and imported assets are stored locally. Emails and passwords are never stored.</p><div class="reset-panel"><div><h3>Reset preview</h3><p class="muted">Restore the sample data and remove your local changes.</p></div>${button('reset-demo','Reset preview','button danger')}</div></section>`;
-  return `${pageHead('Settings','Your account. Your preferences.')}<div class="settings-layout"><nav class="settings-nav" aria-label="Settings sections">${Object.entries(settingsSections).map(([id,[label]])=>`<a href="#/settings?section=${id}" class="${section===id?'active':''}" ${section===id?'aria-current="page"':''}>${icon(id==='account'?'profile':id==='notifications'?'bell':id==='discovery'?'explore':'settings',18)}${label}</a>`).join('')}</nav><div class="settings-section-content">${content}</div></div>`;
+  return `${pageHead('Settings','Your account. Your preferences.')}<div class="settings-layout"><nav class="settings-nav" aria-label="Settings sections">${Object.entries(settingsSections).map(([id,[label]])=>`<a href="#/settings?section=${id}" class="${section===id?'active':''}" ${section===id?'aria-current="page"':''}>${icon(sectionIcons[id]||'settings',18)}${label}</a>`).join('')}</nav><div class="settings-section-content">${content}</div></div>`;
 }
 function friends() {
   const query=params.get('person')||'';
