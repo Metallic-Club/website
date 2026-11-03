@@ -127,7 +127,6 @@ const empty = (title, text, action = '') => `<div class="empty-state">${icon('ex
 function card(game) {
   return `<article class="game-card"><a class="game-card-link" href="#/game/${encodeURIComponent(game.id)}" aria-label="${esc(game.title)}${Number.isFinite(game.playtimeMinutes)?', '+(game.playtimeMinutes?formatPlaytime(game.playtimeMinutes)+' played':'not played yet'):''}">
     <span class="game-art"><img class="poster-art" src="${esc(game.art)}" alt="" loading="lazy" decoding="async" width="240" height="240">
-      <span class="game-genre">${esc(game.genre)}</span>
       ${state.favorites.includes(game.id) ? `<span class="saved-marker" title="Saved to favorites">${icon('heart',13)}</span>` : ''}
     </span><span class="game-title">${esc(game.title)}</span>
     <span class="game-stats"><span class="stat-rating" aria-label="${game.rating} percent liked">${icon('thumbs',13)} ${game.rating}%</span><span aria-label="${esc(game.playing)} playing">${icon('profile',13)} ${esc(game.playing)}</span></span>
