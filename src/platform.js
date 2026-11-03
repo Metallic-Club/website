@@ -72,11 +72,6 @@ export function mutualFriends(state, name) {
   return [...new Set(connections[name] || [])].filter(friend => friend !== name && friend !== state.profile.name && state.friends.includes(friend));
 }
 export const sampleFavorites = { heroX_x: ['1', '3', '4'], CRIMSONSLAYER: ['4', '14'], '00RIP_INDRA': ['3', '8'], PixelNova: ['5', '13'], CloudBuilder: ['5', '11'], LunaBlocks: ['6', '13'], NeonFox: ['9'], OrbitKai: ['7'] };
-export const badges = [
-  { name: 'First steps', description: 'A place to begin.', icon: 'explore' },
-  { name: 'World builder', description: 'Big ideas start small.', icon: 'create' },
-  { name: 'Better together', description: 'Find your people.', icon: 'friends' },
-];
 export const marketplaceAssets = [
   { id: 'city-kit', name: 'Modular City Kit', type: 'models', subcategory: 'Models', price: 480, creator: 'CloudBuilder', description: 'A modular starting point for streets, storefronts, and a city of your own.', color: 'blue' },
   { id: 'nature-kit', name: 'Pinewood Nature Pack', type: 'models', subcategory: 'Meshes', price: 320, creator: 'PixelNova', description: 'A collection of stylized trees, rocks, and foliage for outdoor worlds.', color: 'green' },

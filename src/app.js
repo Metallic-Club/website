@@ -1,3 +1,4 @@
+import {formatPlaytime,playerGameProgress,playedGames,progressTotals} from './game-progress.js';
 import {createCreatorWorkspace} from './creator-workspace.js';
 import {createGroupControls} from './group-controls.js';
 import {assetById,clearFiles} from './creator-data.js';
@@ -13,7 +14,7 @@ import { loadState, saveState, filterGames, updateFriendship, outfits, accessori
 import { readRoute, routeWithParams, categories, friendTabs } from './router.js';
 import { portrait, community, personInfo } from './avatar.js';
 import { SERVER_PRICE, groupRole, groupsForProfile, friendActivity, groupCategories, getGroups, findGroup, groupMembers, ownerForGame, friendsPlaying, friendSessions, sampleServers, serverAccess, friendJoinAccess, createServerPreview, reservedServerCards, updateGroupMembership } from './social.js';
-import { genres, cosmeticSlots, creatorTypes, settingsSections, gameDetails, recommendGames, recommendationGenres, discoverGames, connections, mutualFriends, sampleFavorites, badges, marketplaceAssets, assetMatches } from './platform.js';
+import { genres, cosmeticSlots, creatorTypes, settingsSections, gameDetails, recommendGames, recommendationGenres, discoverGames, connections, mutualFriends, sampleFavorites, marketplaceAssets, assetMatches } from './platform.js';
 
 let storage;
 try { storage = window.localStorage; } catch { storage = { getItem: () => null, setItem: () => { throw Error('Unavailable'); } }; }
@@ -79,7 +80,9 @@ const icons = {
   audio: '<path d="M9 18V5l12-3v13M9 9l12-3"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="15" rx="3" ry="3"/>',
   plugins: '<path d="M8 3v5m8-5v5M5 8h14v4a7 7 0 0 1-14 0zM12 19v3"/>',
   filter: '<path d="M3 6h18M6 12h12M9 18h6"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/>',
-  badge: '<circle cx="12" cy="9" r="6"/><path d="m8 14-2 8 6-3 6 3-2-8M10 9l2 2 3-4"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
+  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  achievement: '<circle cx="12" cy="9" r="6"/><path d="m8 14-2 8 6-3 6 3-2-8M10 9l2 2 3-4"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
 };
 function icon(name, size = 20) { return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.explore}</svg>`; }
@@ -99,12 +102,13 @@ function modal(title, body) { dialog.innerHTML = `<div class="dialog-head"><h2 i
 const pageHead = (title, subtitle, action = '') => `<div class="page-head"><div><h1>${title}</h1><p class="welcome">${subtitle}</p></div>${action}</div>`;
 const empty = (title, text, action = '') => `<div class="empty-state">${icon('explore', 36)}<h3>${title}</h3><p>${text}</p>${action}</div>`;
 function card(game) {
-  return `<article class="game-card"><a class="game-card-link" href="#/game/${encodeURIComponent(game.id)}" aria-label="${esc(game.title)}">
+  return `<article class="game-card"><a class="game-card-link" href="#/game/${encodeURIComponent(game.id)}" aria-label="${esc(game.title)}${Number.isFinite(game.playtimeMinutes)?', '+(game.playtimeMinutes?formatPlaytime(game.playtimeMinutes)+' played':'not played yet'):''}">
     <span class="game-art"><img class="poster-art" src="${esc(game.art)}" alt="" loading="lazy" decoding="async" width="240" height="240">
       <span class="game-genre">${esc(game.genre)}</span>
       ${state.favorites.includes(game.id) ? `<span class="saved-marker" title="Saved to favorites">${icon('heart',13)}</span>` : ''}
     </span><span class="game-title">${esc(game.title)}</span>
     <span class="game-stats"><span class="stat-rating" aria-label="${game.rating} percent liked">${icon('thumbs',13)} ${game.rating}%</span><span aria-label="${esc(game.playing)} playing">${icon('profile',13)} ${esc(game.playing)}</span></span>
+    ${Number.isFinite(game.playtimeMinutes)?`<span class="game-playtime">${icon('clock',12)} ${game.playtimeMinutes?formatPlaytime(game.playtimeMinutes)+' played':'Not played yet'}</span>`:''}
   </a><div class="game-quick-play">${button('play','<svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4 18 12 6 20Z"/></svg>','game-play',`data-id="${esc(game.id)}" data-title="${esc(game.title)}" aria-label="Play ${esc(game.title)}"`)}</div></article>`;
 }
 function shelf(title, subtitle, items, id, destination = 'explore') {
@@ -137,20 +141,18 @@ function friendStrip() {
     <div id="friend-activity-popover" class="friend-activity-popover" popover="manual" role="region" aria-label="Friend activity"></div></section>`;
 }
 function home() {
-  const favorites = games.filter(g => state.favorites.includes(g.id));
-  const recommendations=filterGames(recommendGames(games,state),'',category).slice(0,12);
-  return `${pageHead('Home',`Welcome back, ${esc(state.profile.name)}`,link('wardrobe',avatar()+' Customize avatar','avatar-shortcut'))}
+  const recent=playedGames(games,state.profile.name,state.profile.name);
+  const favorites=games.filter(game=>state.favorites.includes(game.id));
+  const favoriteView=params.get('library')==='favorites';
+  const library=(favoriteView?favorites.map(game=>({...game,playtimeMinutes:playerGameProgress(game,state.profile.name,state.profile.name).minutesPlayed})):recent.map(record=>({...record.game,playtimeMinutes:record.minutesPlayed}))).slice(0,6);
+  const visibleIds=new Set(library.map(game=>game.id));
+  const recommendations=recommendGames(games,state).filter(game=>!visibleIds.has(game.id)).slice(0,6);
+  return `<div class="home-dashboard">${pageHead('Home',`Welcome back, ${esc(state.profile.name)}`)}
     ${friendStrip()}
-    ${shelf('Continue','Pick up where you left off',games.slice(0,6),'continue')}
-    ${!state.launcherDismissed ? `<div class="launcher-strip"><span>${icon('download')}<span><strong>Take Metallic with you</strong><small>Get the latest on the launcher.</small></span></span><div>${link('download','View launcher','button small')}${button('dismiss-launcher',icon('close',16),'plain-icon','aria-label="Dismiss launcher notice"')}</div></div>` : ''}
-    ${favorites.length ? shelf('Favorite games','Always worth coming back to',favorites,'favorites','profile') : ''}
-    <section class="home-section"><div class="section-top"><div><h2>Recommended for you</h2><p class="section-sub">A new favorite is just around the corner</p></div>${link('explore','See all '+icon('arrow',15),'view-all')}</div>
-    ${filters()}${recommendations.length?'<div class="game-grid" id="game-results">'+recommendations.map(card).join('')+'</div>':'<div class="inline-empty"><h3>No recommendations in this view</h3><p>Try another genre or restore your hidden games.</p>'+button('reset-hidden','Restore hidden games','button small')+'</div>'}</section>
-    ${shelf('Popular right now','Find out what everyone is exploring',filterGames(games,'','All','players').slice(0,8),'popular','explore?sort=players')}
-    ${shelf('Top rated','Community favorites',filterGames(games,'','All','rating').slice(0,8),'top-rated','explore?sort=rating')}`;
-}
-function filters() {
-  return `<div class="discover-bar"><div class="categories" role="group" aria-label="Game categories">${categories.map(c=>button('category',c==='All'?'For you':c,`cat ${category===c?'selected':''}`,`data-value="${c}" aria-pressed="${category===c}"`)).join('')}</div></div>`;
+    <section class="home-section home-library"><div class="section-top home-library-heading"><h2>Your games</h2><nav class="home-library-tabs" aria-label="Your game library">${link('home','Continue',!favoriteView?'selected':'')}${link('home?library=favorites','Favorites'+(favorites.length?' ('+favorites.length+')':''),favoriteView?'selected':'')}</nav></div>
+    ${library.length?`<div class="game-grid home-game-grid" aria-label="${favoriteView?'Favorite':'Recently played'} games">${library.map(card).join('')}</div>`:`<div class="inline-empty">${favoriteView?'Favorite a game to keep it here.':'Find a game to get started.'} ${link('explore','Explore games →','text-link')}</div>`}${favoriteView&&favorites.length>6?`<p>${link('profile','View all '+favorites.length+' favorites →','view-all')}</p>`:''}</section>
+    <section class="home-section home-recommendations"><div class="section-top"><h2>For you</h2>${link('explore','Explore all '+icon('arrow',15),'view-all')}</div>${recommendations.length?`<div class="game-grid home-game-grid">${recommendations.map(card).join('')}</div>`:'<div class="inline-empty">'+link('explore','Find more games →','text-link')+'</div>'}</section>
+    <p class="fine-print home-progress-note">Play history and playtime are sample data.</p></div>`;
 }
 function explore() {
   const query=params.get('q')||'', ranked=recommendGames(games,state), weights=recommendationGenres(games,state);
@@ -181,13 +183,17 @@ function gamePage() {
   const game=routeData.value;if(!game)return notFound();
   if(catalog.remote)return remoteGamePage(game);
   const info=gameDetails[game.id], servers=sampleServers(game.id), owned=reservedServerCards(state,game.id), owner=ownerForGame(game.id);
-  const serverTab=params.get('tab')==='servers';
+  const serverTab=params.get('tab')==='servers',achievementTab=params.get('tab')==='achievements';
+  const requested=params.get('user'),progressName=requested&&(requested===state.profile.name||state.friends.includes(requested)||community.some(person=>person.name===requested))?requested:state.profile.name;
+  const progress=playerGameProgress(game,progressName,state.profile.name);
   const descriptions={Adventure:'Explore the unknown, discover hidden corners, and find your own path through a world full of possibility.',Action:'Bring your best moves, take on a new challenge, and team up with friends for your next adventure.',Obby:'Jump, dodge, and find your rhythm. Every obstacle is another chance to beat your personal best.',Simulation:'Start with a little imagination and make a world your own. Build, discover, and see where your curiosity takes you.',Roleplay:'Meet up with friends, find your favorite corner of the city, and create a story that belongs to you.',Racing:'Find your line and chase the perfect lap. A new personal best is waiting around the next corner.'};
-  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><h1>${esc(game.title)}</h1><p class="game-creator">By ${creatorLink(game.id)}<span class="verified" aria-label="Sample creator">${icon('check',12)}</span></p><p>${descriptions[game.genre]}</p><div class="game-tag-row">${info.tags.map(tag=>`<span>${tag}</span>`).join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${game.playing}</strong><span>Active players</span></div><div><strong>${servers.length}</strong><span>Sample servers</span></div></div><div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}${button('share',icon('share',18),'button','aria-label="Share game"')}</div><p class="fine-print">Game and server activity are sample content. Live gameplay is not connected.</p></div></section>
-    ${gameFriends(game.id)}<nav class="game-page-tabs" aria-label="Game sections">${link('game/'+game.id,'Overview',!serverTab?'selected':'')}${link('game/'+game.id+'?tab=servers','Servers ('+servers.length+')',serverTab?'selected':'')}</nav>
+  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><h1>${esc(game.title)}</h1><p class="game-creator">By ${creatorLink(game.id)}<span class="verified" aria-label="Sample creator">${icon('check',12)}</span></p><p>${descriptions[game.genre]}</p><div class="game-tag-row">${info.tags.map(tag=>`<span>${tag}</span>`).join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${game.playing}</strong><span>Active players</span></div><div><strong>${servers.length}</strong><span>Sample servers</span></div></div>${gameProgressSummary(game,progressName)}<div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}${button('share',icon('share',18),'button','aria-label="Share game"')}</div><p class="fine-print">Game activity, playtime, and achievements are sample data. Live gameplay is not connected.</p></div></section>
+    ${!achievementTab?gameFriends(game.id):''}<nav class="game-page-tabs" aria-label="Game sections">${link('game/'+game.id,'Overview',!serverTab&&!achievementTab?'selected':'')}${link('game/'+game.id+'?tab=achievements'+(progressName!==state.profile.name?'&user='+encodeURIComponent(progressName):''),'Achievements ('+progress.total+')',achievementTab?'selected':'')}${link('game/'+game.id+'?tab=servers','Servers ('+servers.length+')',serverTab?'selected':'')}</nav>
+    ${achievementTab?gameAchievementDetails(game,progressName):`
     ${!serverTab?`<section class="game-about"><h2>About this game</h2><p>${descriptions[game.genre]}</p><div class="game-facts"><div><span>Creator</span><strong>${creatorLink(game.id)}</strong></div><div><span>Play style</span><strong>${info.mode}</strong></div><div><span>Mood</span><strong>${info.mood}</strong></div><div><span>Play on</span><strong>Metallic Launcher</strong></div></div></section>`:''}
     <section class="reserved-servers-section"><div class="section-top"><div><h2>Your servers <span class="muted">(${owned.length})</span></h2><p class="section-sub">Your own space, with public or invite-only access.</p></div>${button('create-server',icon('create',16)+' Create private server','button',`data-id="${game.id}"`)}</div><div class="private-server-price"><span>${icon('alloy',18)} <strong>${SERVER_PRICE} Alloy</strong><small>One-time preview creation cost</small></span><span>Preview balance: <strong>${state.previewAlloy.toLocaleString()} Alloy</strong></span></div>${owned.length?`<div class="server-list">${owned.map(serverCard).join('')}</div>`:'<div class="reserved-empty">'+icon('friends',23)+'<p>Make room for your friends. Create a server and decide who can join.</p></div>'}</section>
     <section class="public-servers-section"><div class="section-top"><div><h2>Active servers</h2><p class="section-sub">Hover or focus a player to see their name.</p></div><label class="sort-label">Sort by<select id="server-sort"><option value="available" ${params.get('serverSort')==='available'||!params.get('serverSort')?'selected':''}>Available spaces</option><option value="players" ${params.get('serverSort')==='players'?'selected':''}>Most players</option></select></label></div><div class="server-list">${[...servers].sort((a,b)=>params.get('serverSort')==='players'?b.players.length-a.players.length:(b.capacity-b.players.length)-(a.capacity-a.players.length)).map(serverCard).join('')}</div><p class="fine-print">These are sample sessions. Join controls preview a launcher handoff; they do not start or connect to a live game.</p></section>
+    `}
     ${shelf('You might also like','Keep exploring',games.filter(item=>item.id!==game.id).sort((a,b)=>Number(b.genre===game.genre)-Number(a.genre===game.genre)).slice(0,8),'related',`explore?category=${game.genre}`)}`;
 }
 function remoteGamePage(game) {
@@ -240,8 +246,24 @@ function profile() {
     <section class="profile-section"><div class="section-top"><h2>Favorite games <span class="muted">(${favorites.length})</span></h2>${own?link('explore','Find more →','view-all'):''}</div>${favorites.length?`<div class="game-grid profile-games">${favoritePage.items.map(card).join('')}</div>`:'<div class="inline-empty">No favorite games yet.'+(own?' '+link('explore','Find your next favorite →','text-link'):'')+'</div>'}${pageLinks(favoritePage,'favorite games','favoritePage')}</section>
     <section class="profile-section"><div class="section-top"><h2>Creations <span class="muted">(${publishedCreations.length})</span></h2>${own?link('create','Creator hub →','view-all'):''}</div>${publishedCreations.length?`<div class="game-grid profile-games">${publishedCreations.map(card).join('')}</div>`:'<div class="inline-empty">No published games yet.'+(own?' '+link('create?tab=templates','Choose a template →','text-link'):'')+'</div>'}</section>
     ${profileGroups(name,own)}
-    <section class="profile-section"><div class="section-top"><h2>Badges</h2><span class="muted small-text">Preview collection</span></div><div class="badge-grid">${badges.slice(0,own?3:2).map((badge,i)=>`<article class="profile-badge"><span class="badge-emblem badge-${i}">${icon(badge.icon,28)}</span><div><h3>${badge.name}</h3><p>${badge.description}</p></div></article>`).join('')}</div></section>
-    </div><aside class="profile-meta-column"><section class="panel profile-about"><h3>About</h3><p>${esc(own?state.profile.bio:person.bio)||'No bio yet.'}</p><span class="tag">${own?'Your profile':'Sample player'}</span>${own?link('wardrobe','Customize avatar →','button full'):''}</section>${own?`<section class="profile-avatar-stage">${mannequin(state.outfit,state.color,state.accessory,false)}<span>Currently wearing · ${state.outfit}</span></section>`:''}</aside></div>`;
+    ${profileAchievements(name)}
+    </div><aside class="profile-meta-column"><section class="panel profile-about"><h3>About</h3><p>${esc(own?state.profile.bio:person.bio)||'No bio yet.'}</p><span class="tag">${own?'Your profile':'Sample player'}</span>${profilePlaytime(name)}${own?link('wardrobe','Customize avatar →','button full'):''}</section>${own?`<section class="profile-avatar-stage">${mannequin(state.outfit,state.color,state.accessory,false)}<span>Currently wearing · ${state.outfit}</span></section>`:''}</aside></div>`;
+}
+function profileAchievements(name) {
+  const records=playedGames(games,name,state.profile.name).sort((a,b)=>b.minutesPlayed-a.minutesPlayed),totals=progressTotals(records),page=pageWindow(records,params.get('achievementPage'),6);
+  return `<section class="profile-section profile-achievements"><div class="section-top"><h2>Achievements</h2><span class="muted small-text">Sample progress</span></div>${records.length?`<p class="achievement-overview">${totals.unlocked} of ${totals.total} unlocked across ${totals.games} games</p><div class="achievement-game-grid">${page.items.map(record=>`<a class="achievement-game-card" href="#/game/${record.game.id}?tab=achievements${name===state.profile.name?'':'&user='+encodeURIComponent(name)}"><img src="${record.game.art}" alt="" loading="lazy" width="80" height="80"><div><h3>${esc(record.game.title)}</h3><span class="achievement-count">${record.unlocked} / ${record.total} unlocked</span><progress value="${record.unlocked}" max="${record.total}" aria-label="${esc(record.game.title)}: ${record.unlocked} of ${record.total} achievements unlocked"></progress><span class="achievement-playtime">${icon('clock',12)} ${formatPlaytime(record.minutesPlayed)} played</span></div></a>`).join('')}</div>`:'<div class="inline-empty">No game progress to show yet.</div>'}${pageLinks(page,'achievement games','achievementPage')}</section>`;
+}
+function profilePlaytime(name) {
+  const totals=progressTotals(playedGames(games,name,state.profile.name));
+  return `<div class="profile-playtime"><span>Total playtime</span><strong>${formatPlaytime(totals.minutesPlayed)}</strong><small>${totals.games} games · Sample gameplay stats</small></div>`;
+}
+function gameProgressSummary(game,name) {
+  const progress=playerGameProgress(game,name,state.profile.name);
+  return `<div class="game-progress-summary"><div><span>${name===state.profile.name?'Your':esc(name)+"’s"} playtime</span><strong>${formatPlaytime(progress.minutesPlayed)}</strong></div><a href="#/game/${game.id}?tab=achievements${name===state.profile.name?'':'&user='+encodeURIComponent(name)}"><span>Achievements</span><strong>${progress.unlocked} / ${progress.total} unlocked</strong></a></div>`;
+}
+function gameAchievementDetails(game,name) {
+  const progress=playerGameProgress(game,name,state.profile.name);
+  return `<section class="game-achievements"><div class="section-top"><div><h2>Achievements</h2><p class="section-sub">${name===state.profile.name?'Your progress':esc(name)+"’s progress"} · ${formatPlaytime(progress.minutesPlayed)} played</p></div><strong>${progress.unlocked} / ${progress.total} unlocked</strong></div><progress value="${progress.unlocked}" max="${progress.total}" aria-label="${progress.unlocked} of ${progress.total} achievements unlocked"></progress><div class="game-achievement-list">${progress.achievements.map(item=>`<article class="achievement-item ${item.unlocked?'unlocked':'locked'}"><span class="achievement-symbol">${icon(item.unlocked?'check':'lock',22)}</span><div><h3>${esc(item.name)}</h3><p>${esc(item.description)}</p></div><span class="achievement-state">${item.unlocked?'Unlocked':'Locked'}</span></article>`).join('')}</div></section>`;
 }
 function profileGroups(name,own) {
   const groups=groupsForProfile(state,name), groupPage=pageWindow(groups,params.get('profileGroupPage'));
@@ -402,7 +424,7 @@ function navigate(destination) {
 function setQuery(changes) {
   // The URL updates before hashchange fires; use it so rapid edits cannot lose filters.
   const current=readRoute(location.hash);
-  if(!Object.keys(changes).every(key=>['page','friendPage','groupPage','memberPage','assetPage','profileGroupPage','favoritePage','creationPage'].includes(key)))changes={page:null,friendPage:null,groupPage:null,memberPage:null,assetPage:null,...changes};
+  if(!Object.keys(changes).every(key=>['page','friendPage','groupPage','memberPage','assetPage','profileGroupPage','favoritePage','creationPage','achievementPage'].includes(key)))changes={page:null,friendPage:null,groupPage:null,memberPage:null,assetPage:null,...changes};
   navigate(routeWithParams(current.route,current.params,changes));
 }
 function setMenu(open) {
@@ -492,12 +514,12 @@ window.addEventListener('hashchange',()=>{
     return;
   }
   const samePage=next.route===previous.route && next.params.get('user')===previous.params.get('user');
-  const paging=['page','friendPage','profileGroupPage','favoritePage','creationPage','memberPage'].some(key=>next.params.get(key)!==previous.params.get(key));
+  const paging=['page','friendPage','profileGroupPage','favoritePage','creationPage','achievementPage','memberPage'].some(key=>next.params.get(key)!==previous.params.get(key));
   const previousScroll=scrollY, previousFocus=samePage?focusIdentity():null;
   scrollPositions.set(lastHash,previousScroll);lastHash=location.hash;
   if(dialog.open)dialog.close();
   render(false);
-  if(paging){const target=document.querySelector('#browse-games,.site-search-section,.profile-friends,.marketplace-grid,.friend-grid,.group-grid,.marketplace-grid');target?.scrollIntoView({block:'start'});document.querySelector('#main').focus({preventScroll:true});}
+  if(paging){const target=document.querySelector('#browse-games,.site-search-section,.profile-friends,.achievement-game-grid,.marketplace-grid,.friend-grid,.group-grid,.marketplace-grid');target?.scrollIntoView({block:'start'});document.querySelector('#main').focus({preventScroll:true});}
   else window.scrollTo(0,samePage?previousScroll:(scrollPositions.get(lastHash)||0));
   if(samePage&&!paging)restoreFocus(previousFocus);else document.querySelector('#main').focus({preventScroll:true});
 });
