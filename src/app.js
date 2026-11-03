@@ -82,7 +82,7 @@ const icons = {
   rotate: '<path d="M4 10a8 8 0 1 1 1 8M4 3v7h7"/>',
   share: '<path d="M12 16V3m-4 4 4-4 4 4M5 12v9h14v-9"/>',
   crown: '<path d="m3 6 5 4 4-6 4 6 5-4-2 13H5zM6 22h12"/>',
-  groups: '<circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M16 15a5 5 0 0 1 6 5v1"/>',
+  groups: '<circle cx="12" cy="5" r="3"/><circle cx="4" cy="9" r="2"/><circle cx="20" cy="9" r="2"/><path d="M8 21v-5a4 4 0 0 1 8 0v5ZM1 20v-4a3 3 0 0 1 5-2M23 20v-4a3 3 0 0 0-5-2"/>',
   marketplace: '<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M3 11h18M8 7V4h8v3M9 15h6"/>',
   models: '<path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/>',
   audio: '<path d="M9 18V5l12-3v13M9 9l12-3"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="15" rx="3" ry="3"/>',
