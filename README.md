@@ -35,7 +35,7 @@ Documentation is available at `#/docs`, with getting-started guides, three tutor
 - Friend profiles, search, incoming requests, pending outgoing requests, request cancellation, and removal confirmation.
 - Profile editing, local preference switches, notifications, and preview data reset.
 - Invite-gated signup with server verification, short-lived in-memory access and a fail-closed default. All platform routes require a server-verified beta tester session; sample login credentials never grant access. Invited signup remains a preview until registration is connected. Accessible pack-preview dialogs remain available.
-- Four primary top tabs, a supplementary sidebar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
+- Three primary top tabs, Create in the sidebar, a keyboard-contained mobile drawer, semantic forms, preserved keyboard focus, native modal dialogs, and reduced-motion support.
 - Unsaved settings protection and normalization of previously saved browser data.
 
 Explore filters and friend tabs survive reloads and can be bookmarked. For example: `#/explore?category=Action&sort=rating` and `#/friends?tab=sent`. Community profile previews use `#/profile?user=heroX_x`. Game servers use `#/game/1?tab=servers`; groups use `#/groups` and `#/groups/metallic-studio`.
@@ -45,7 +45,7 @@ Explore filters and friend tabs survive reloads and can be bookmarked. For examp
 - Home friends show a compact activity popup on hover, keyboard focus, or tap, with game artwork and join controls that respect the same session access rules as game pages.
 - Global search covers games, people (including your profile and saved friends), and groups, with grouped suggestions and category-filtered results. Search placeholders fade when focused.
 - Friend presence uses gray for offline/hidden, blue for online, green for playing, and orange for Studio across Home, Friends, and profile friend lists. Status labels are available on hover and to assistive technology.
-- Square profile group and badge tiles fit desktop and mobile layouts. The mutual-friend summary uses a text link above the friend list.
+- Square profile group tiles and per-game achievement summaries fit desktop and mobile layouts. The mutual-friend summary uses a text link above the friend list.
 - Profile groups display membership roles and a crown badge for owned groups, using the same role data as group member lists.
 - Groups include discovery, interests, open or approval-based membership, member roles, announcements, games, and local owner management. The control panel has profile/image editing, announcements, ranked roles, granular permissions, and member-role assignment. Templates and imported files stay on the device.
 
@@ -101,3 +101,5 @@ See [the verification record](docs/verification.md) for the latest review covera
 Keep authentication, user data, wallet operations, and creator publishing behind service adapters when connecting a backend; do not treat localStorage as an authority for any live account or purchase.
 
 GitHub Pages uses .github/workflows/static.yml to check and build both versions into .local/github-pages/, then publish the beta and early-release previews together. Only generated static assets are uploaded. The previous Jekyll workflow remains as a manual compatibility entry that delegates to the same pipeline.
+
+Home uses a compact friends row, a shared Continue/Favorites library, and six recommendations. Popular lists and discovery filters live on Explore. Profiles group achievements by game with unlocked/total progress, per-game playtime, and a total playtime summary. Game pages include an Achievements tab. Gameplay records in src/game-progress.js are sample fixtures, not measured launcher activity.

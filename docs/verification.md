@@ -32,7 +32,7 @@ Exercised in the browser:
 - Grouped global search suggestions, Games/People/Groups result tabs, direct profile/group links, empty results, and URL reload persistence.
 - Home friend popup placement, join preview, joins-off state, keyboard entry, Escape dismissal with focus restoration, and mobile layout.
 - Search placeholder fades on focus in the header, Explore, Friends, Marketplace, and Groups.
-- Square profile group and badge tiles remain square without overflow at desktop, 320, 390, and 768 pixels. Group roles and owner crowns remain visible.
+- Profile group tiles remain square; grouped achievement summaries fit without overflow at desktop, 320, 390, and 768 pixels. Group roles and owner crowns remain visible.
 - Profile mutual-friend summaries retain the text link and tab without miniature avatars.
 - Friend lists use gray offline/hidden, blue online, green playing, and orange Studio dots, with accessible status labels. Sample sessions agree with player activity.
 - Profile group cards show owner crowns and Admin/Developer/Member roles; personal groups remain after reload.
@@ -51,7 +51,7 @@ This remains a front-end foundation. Live authentication, gameplay, server provi
 ## Requested platform revisions
 
 - Top navigation is Home, Explore, Wardrobe, Create. Sidebar links are supplementary, and the redundant sidebar profile button is removed.
-- Profiles show friends, favorite games, creations, and badges, in that order. Other profiles have mutual-friend counts, avatar stacks, and a mutual-friends filter.
+- Profiles show friends, favorite games, creations, groups, and game-level achievements. Achievement summaries include unlocked/total counts and per-game playtime. Other profiles have mutual-friend counts and a mutual-friends filter.
 - Settings has Account, Privacy & safety, Notifications, Game preferences, Security, and Preview data sections. Saving a section preserves the other sections.
 - The notification inbox is anchored beneath the bell, with read state, preferences, outside-click dismissal, and keyboard support. It does not open a modal backdrop.
 - Creator libraries include Games, Models & meshes, Audio & music, Plugins, and Cosmetics. Cosmetic slots include hats, shirts, pants, shoes, shoulders, back, neck, face, and waist.
