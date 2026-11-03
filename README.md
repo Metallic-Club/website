@@ -97,3 +97,23 @@ GitHub Pages uses the checked production build in .github/workflows/static.yml a
 Home uses a compact friends row, a shared Continue/Favorites library, and six recommendations. Popular lists and discovery filters live on Explore. Profiles group achievements by game with unlocked/total progress, per-game playtime, and a total playtime summary. Game pages include an Achievements tab. Gameplay records in src/game-progress.js are sample fixtures, not measured launcher activity.
 
 The Home friends heading sits above the avatar row. Game-page friends and join controls remain visible across Overview, Achievements, and Servers. The header menu button toggles the desktop sidebar between full labels and an icon rail; mobile retains its navigation drawer.
+
+### Profile privacy preview
+
+Settings → Privacy & safety stores separate visibility choices for friends lists,
+playtime, achievements, favorites, and groups. Each section has independent
+`friends` and `others` audiences. Friends lists and favorites default to hidden
+for both, including when loading older saved preview data. Owners always see
+all their own sections. Whole-profile visibility takes precedence for visitors.
+
+The owner-only “View profile as” control previews saved preferences as a friend
+or another player. It only reduces the owner's view; query parameters cannot
+impersonate an owner or unlock another player's sections. Sample players use
+the default policy. Counts, mutual friends, per-game playtime, and linked
+achievement views follow the same section policy.
+
+These previews use local sample data, not a live privacy service. Before live
+accounts ship, the backend must resolve the authenticated viewer's relationship
+to the profile owner and filter private records and counts **before returning
+responses**. Reuse the policy in `src/privacy.js`; never trust a requested
+`viewAs`, client-supplied friendship, or local preferences as authorization.
