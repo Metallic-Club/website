@@ -17,7 +17,7 @@ test('production assets are reproducibly versioned, consolidated, cacheable and 
   await writeFile(path.join(temporary,'src','a.css'),'.first{color:red}');await writeFile(path.join(temporary,'src','b.css'),'.second{color:blue}');
   await writeFile(path.join(temporary,'src','app.js'),"import './other.js';const art='art/game.svg';");await writeFile(path.join(temporary,'src','other.js'),'export const ready=true;');
   await writeFile(path.join(temporary,'public','favicon.svg'),'<svg/>');await writeFile(path.join(temporary,'public','art','game.svg'),'<svg/>');
-  const env={...process.env,METALLIC_CATALOG_API:'',METALLIC_BETA_API:''};
+  const env={...process.env,METALLIC_CATALOG_API:'',METALLIC_BETA_API:'',METALLIC_CONNECTIONS_API:''};
   await run(process.execPath,[script],{cwd:temporary,env});
   const html=await readFile(path.join(temporary,'dist','index.html'),'utf8'), source=html.match(/src="\.\/(assets\/[a-f0-9]{12}\/src\/app.js)"/)?.[1];
   assert.ok(source);assert.equal((html.match(/rel="stylesheet"/g)||[]).length,1);

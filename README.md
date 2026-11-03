@@ -158,3 +158,45 @@ friends, profiles, group members, and server previews. Activity text and dots
 share `data-presence` colors: gray offline/hidden, blue online, green playing,
 and orange using Studio. Activity labels use the same presence resolver and
 never expose a hidden player's game.
+
+
+### Community updates and Discord linking
+
+Group member pages now group lists by role, ordered by rank, with bounded
+pagination per role. Profiles show Join game only for friends whose active
+session permits joining. Home friend rows include headroom for hover motion.
+Profile placeholders extend through the circular crop, and the settings icon
+uses an eight-tooth gear. Creator recognition icons stay inline with names.
+
+Group News supports plain-text posts, opt-in group notifications, and a
+`postNews` permission. Owners, default Admins, and default Developers can publish;
+custom roles must explicitly include the permission. Posts are bounded to 100
+local records with titles up to 100 and bodies up to 3,000 characters. Followers
+see notifying posts in the bell popover; silent posts and the author's own posts
+do not ping them. Preferences and read markers persist. This is a browser-local
+preview, not cross-account delivery. Production must authorize every post and
+subscription on the server, sanitize output, rate-limit publishing, and deliver
+notifications only to subscribed recipients.
+
+Settings → Linked accounts contains YouTube and Discord. With no configured
+account service, Discord offers an explicitly unverified preview. Local storage
+cannot create a verified Discord connection. Configure `METALLIC_CONNECTIONS_API`
+at build time (HTTPS, or loopback HTTP in development) for a live account deployment.
+The GitHub Pages design-preview builder always clears live API endpoints,
+including this one, so these public previews cannot initiate real account linking.
+The frontend expects these authenticated, uncached endpoints:
+
+- `GET /v1/account/connections/discord`: `{linked:false}` or
+  `{linked:true,verified:true,discordId:"…",username:"…"}`.
+- `POST /v1/account/connections/discord/start`: `{authorizeUrl:"…"}` using
+  Discord's authorization-code flow, only `identify`, a session-bound `state`,
+  and a registered callback on the account-service origin.
+- `DELETE /v1/account/connections/discord`: unlink/revoke, returning 204.
+
+The account backend must verify OAuth state and Discord's issuer, exchange the
+code server-side, fetch `/users/@me`, and bind the Discord user ID to the stable
+Metallic account ID. Enforce one-to-one bindings and session/CSRF checks. Keep
+client secrets and access/refresh tokens server-side. The official bot should
+query that verified mapping through an authenticated server endpoint; editable
+names, submitted Discord IDs, and browser preview flags are not identity proof.
+OAuth reference: https://docs.discord.com/developers/topics/oauth2

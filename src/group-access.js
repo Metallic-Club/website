@@ -1,8 +1,8 @@
-export const groupPermissions={editProfile:'Edit name, image & description',postShout:'Post announcements',manageMembers:'Manage member roles',manageRoles:'Create & edit roles',createGames:'Create group games'};
+export const groupPermissions={editProfile:'Edit name, image & description',postShout:'Post announcements',postNews:'Publish group news',manageMembers:'Manage member roles',manageRoles:'Create & edit roles',createGames:'Create group games'};
 export const defaultRoles=[
-  {name:'Admin',rank:200,permissions:['editProfile','postShout','manageMembers','createGames']},
+  {name:'Admin',rank:200,permissions:['editProfile','postShout','postNews','manageMembers','createGames']},
   {name:'Moderator',rank:100,permissions:['postShout','manageMembers']},
-  {name:'Developer',rank:50,permissions:['createGames']},
+  {name:'Developer',rank:50,permissions:['createGames','postNews']},
   {name:'Member',rank:1,permissions:[]},
 ];
 export function normalizeRoles(input){

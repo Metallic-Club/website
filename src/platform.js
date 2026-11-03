@@ -5,6 +5,7 @@ export const cosmeticSlots = ['Hats', 'Shirts', 'Pants', 'Shoes', 'Shoulders', '
 export const creatorTypes = { games: 'Games', templates: 'Templates', models: 'Models & meshes', textures: 'Textures & materials', audio: 'Audio & music', plugins: 'Plugins', cosmetics: 'Cosmetics' };
 export const settingsSections = {
   account: ['Account', 'Your profile and account details.'],
+  connections: ['Linked accounts', 'Your YouTube and Discord connections.'],
   themes: ['Themes', 'Appearance, accent colors, and readability.'],
   privacy: ['Privacy & safety', 'Choose how you connect with other players.'],
   notifications: ['Notifications', 'Choose what appears in your notification inbox.'],

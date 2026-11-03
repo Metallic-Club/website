@@ -10,7 +10,7 @@ const sources = { beta:await realpath(values.beta), 'early-release':await realpa
 for (const directory of Object.values(sources)) {
   // Hosted design previews must never inherit a live account or catalog API.
   execFileSync(process.execPath, ['scripts/build.mjs'], {
-    cwd:directory, stdio:'inherit', env:{...process.env,METALLIC_BETA_API:'',METALLIC_CATALOG_API:''},
+    cwd:directory, stdio:'inherit', env:{...process.env,METALLIC_BETA_API:'',METALLIC_CATALOG_API:'',METALLIC_CONNECTIONS_API:''},
   });
 }
 await mkdir(local,{recursive:true});

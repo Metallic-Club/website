@@ -1,3 +1,4 @@
+import {normalizeNewsState} from './group-news.js';
 import {normalizeYoutubeUrl} from './account-roles.js';
 import {normalizePrivacy} from './privacy.js';
 import {normalizeAssets} from './creator-data.js';
@@ -17,6 +18,7 @@ export const colors = [
 ];
 export const defaults = {
   privacy: normalizePrivacy(),
+  groupNewsPosts: [], groupNewsSubscriptions: {}, discordPreview: false,
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone', youtubeUrl: '' },
   outfit: 'Classic', color: '#394c60', accessory: 'None', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
   requests: ['PixelNova', 'CloudBuilder'], outgoing: [], notifications: true, activity: true, launcherDismissed: false,
@@ -55,9 +57,10 @@ export function loadState(storage) {
     if (outfits.includes(data.outfit)) state.outfit = data.outfit;
     if (accessories.includes(data.accessory)) state.accessory = data.accessory;
     if (typeof data.color === 'string' && /^#[a-f0-9]{6}$/i.test(data.color)) state.color = data.color;
-    for (const key of ['notifications', 'activity', 'launcherDismissed', 'updateNotifications']) if (typeof data[key] === 'boolean') state[key] = data[key];
+    for (const key of ['notifications', 'activity', 'launcherDismissed', 'updateNotifications', 'discordPreview']) if (typeof data[key] === 'boolean') state[key] = data[key];
     if (['Everyone', 'Friends of friends', 'Nobody'].includes(data.friendPolicy)) state.friendPolicy = data.friendPolicy;
     normalizeSocialState(data, state);
+    normalizeNewsState(data,state);
   } catch { /* Unavailable or corrupt storage uses safe defaults. */ }
   return state;
 }
