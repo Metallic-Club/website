@@ -12,3 +12,9 @@ export function resolvePresence(person = {}) {
 }
 export const presenceFor = (state, name) => resolvePresence(name === state.profile.name
   ? { status: state.activity ? 'online' : 'hidden' } : personInfo(name));
+
+export function activityFor(state,name) {
+  const status=presenceFor(state,name),person=personInfo(name);
+  const text=status.key==='playing'&&person.activity?.startsWith('Playing ')?person.activity:status.label;
+  return {...status,text};
+}

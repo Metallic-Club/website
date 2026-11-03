@@ -141,3 +141,12 @@ channel ownership and a trusted integer subscriber count strictly over 100,000.
 Staff roles and developer/community verification are curated claims. Live account
 assignment and YouTube OAuth/subscriber verification still need backend services;
 these icons do not grant moderation or administrative permissions.
+
+
+Both previews now show a work-in-progress Wardrobe, with no editor, saved-look
+controls, or profile mannequin. All player pictures use the shared neutral
+`art/profile-placeholder.svg`, including navigation, search, notifications,
+friends, profiles, group members, and server previews. Activity text and dots
+share `data-presence` colors: gray offline/hidden, blue online, green playing,
+and orange using Studio. Activity labels use the same presence resolver and
+never expose a hidden player's game.

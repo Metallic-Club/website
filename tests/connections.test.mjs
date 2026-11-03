@@ -1,4 +1,4 @@
-import { resolvePresence, presenceFor } from '../src/presence.js';
+import { resolvePresence, presenceFor, activityFor } from '../src/presence.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaults } from '../src/store.js';
@@ -67,4 +67,15 @@ test('friend presence distinguishes offline, online, game, and Studio and respec
   assert.equal(presenceFor(state, state.profile.name).key, 'online');
   assert.equal(presenceFor(state, 'CloudBuilder').key, 'studio');
   assert.equal(friendActivity(state, 'PixelNova'), null);
+});
+
+
+test('activity labels use the same presence state and never disclose hidden gameplay',()=>{
+  const state=structuredClone(defaults);
+  for(const [name,key,text] of [['NeonFox','offline','Offline'],['LunaBlocks','online','Online'],['CloudBuilder','studio','Using Studio'],['heroX_x','playing','Playing Cyber Raven']]){
+    assert.equal(activityFor(state,name).key,presenceFor(state,name).key);
+    assert.equal(activityFor(state,name).key,key);assert.equal(activityFor(state,name).text,text);
+  }
+  state.profile.name='heroX_x';state.activity=false;
+  assert.deepEqual(activityFor(state,'heroX_x'),{key:'offline',label:'Offline',text:'Offline'});
 });
