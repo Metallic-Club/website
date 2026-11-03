@@ -20,10 +20,11 @@ test('hidden games leave discovery and filters combine without losing preference
   state.hiddenGames = ['13'];
   state.favorites = ['5'];
   const results = discoverGames(games, state, new URLSearchParams('category=Simulation&mood=Relaxed&mode=Co-op&rating=90&unplayed=1'));
-  assert.equal(results.length, 0);
+  assert.ok(results.every(game=>!['5','13'].includes(game.id)));
   state.hiddenGames = [];
   const visible = discoverGames(games, state, new URLSearchParams('category=Simulation&mood=Relaxed&mode=Co-op&rating=90&unplayed=1'));
-  assert.deepEqual(visible.map(game => game.id), ['13']);
+  assert.ok(visible.some(game => game.id==='13'));
+  assert.ok(visible.every(game => game.id!=='5'));
   assert.ok(visible.every(game => gameDetails[game.id].mode === 'Co-op'));
 });
 test('mutual friends are an actual intersection with no duplicate or self entries', () => {

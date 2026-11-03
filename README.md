@@ -125,3 +125,27 @@ accounts ship, the backend must resolve the authenticated viewer's relationship
 to the profile owner and filter private records and counts **before returning
 responses**. Reuse the policy in `src/privacy.js`; never trust a requested
 `viewAs`, client-supplied friendship, or local preferences as authorization.
+
+
+### Sample worlds and account recognition
+
+The preview contains 32 games and 32 example accounts. Each game has distinct
+scenery artwork, without embedded names, concept captions, or player figures.
+Titles remain below the artwork. `scripts/generate-concept-art.mjs` regenerates
+all game illustrations. Catalog metadata, creator profiles, and sample gameplay
+records cover the expanded fixtures. Game and player lists remain paginated.
+
+Account icons appear beside names in profiles, friends, search, game creator
+links, server-player tooltips, groups, and creator assets. Hover labels name each
+role: platform owner (gold crown), head admin (red shield), admin (purple shield),
+mod (green shield), YouTuber (red video icon), and verified (blue check).
+The official example account is Metallic. AstraAdmin, AtlasAdmin, SageMod,
+FramePilot, and StudioMoss demonstrate the other account types.
+
+`src/account-roles.js` reads trusted example claims from `src/sample-accounts.js`.
+Editable profile names and local storage cannot grant roles. A saved YouTube
+channel URL is only a profile link. YouTuber eligibility requires verified linked
+channel ownership and a trusted integer subscriber count strictly over 100,000.
+Staff roles and developer/community verification are curated claims. Live account
+assignment and YouTube OAuth/subscriber verification still need backend services;
+these icons do not grant moderation or administrative permissions.

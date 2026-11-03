@@ -1,3 +1,4 @@
+import {normalizeYoutubeUrl} from './account-roles.js';
 import {normalizePrivacy} from './privacy.js';
 import {normalizeAssets} from './creator-data.js';
 import {normalizeGroupConfig} from './group-access.js';
@@ -16,7 +17,7 @@ export const colors = [
 ];
 export const defaults = {
   privacy: normalizePrivacy(),
-  profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone' },
+  profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone', youtubeUrl: '' },
   outfit: 'Classic', color: '#394c60', accessory: 'None', favorites: [], friends: ['heroX_x', 'CRIMSONSLAYER', '00RIP_INDRA'],
   requests: ['PixelNova', 'CloudBuilder'], outgoing: [], notifications: true, activity: true, launcherDismissed: false,
   preferredGenres: [], hiddenGames: [], creatorAssets: [], inventory: [], assetVotes: {}, groupConfigs: {}, savedAssets: [], readNotifications: [],
@@ -47,6 +48,7 @@ export function loadState(storage) {
     state.outgoing = state.outgoing.filter(name => !state.friends.includes(name) && !state.requests.includes(name));
     if (data.profile && typeof data.profile === 'object') {
       if (username(data.profile.name)) state.profile.name = data.profile.name;
+      state.profile.youtubeUrl = normalizeYoutubeUrl(data.profile.youtubeUrl);
       if (typeof data.profile.bio === 'string') state.profile.bio = data.profile.bio.slice(0, 240);
       if (['Everyone', 'Friends only', 'Only me'].includes(data.profile.visibility)) state.profile.visibility = data.profile.visibility;
     }
