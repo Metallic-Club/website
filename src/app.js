@@ -13,10 +13,10 @@ import { createInviteGate } from './beta-access.js';
 import { createBetaSession, requiresTester, testerReturnTo } from './beta-session.js';
 import { pageWindow } from './pagination.js';
 import { createLocalCatalog, createCatalogClient, metadataFor } from './catalog-service.js';
-import { presenceFor } from './presence.js';
-import { loadState, saveState, filterGames, updateFriendship, outfits, accessories, colors, escapeHtml as esc } from './store.js';
+import {presenceFor,activityFor} from './presence.js';
+import { loadState, saveState, filterGames, updateFriendship, escapeHtml as esc } from './store.js';
 import { readRoute, routeWithParams, categories, friendTabs } from './router.js';
-import { portrait, genericAvatar, community, personInfo } from './avatar.js';
+import {portrait,genericAvatar,community,personInfo} from './avatar.js';
 import { SERVER_PRICE, groupRole, groupsForProfile, friendActivity, groupCategories, getGroups, findGroup, groupMembers, ownerForGame, friendsPlaying, friendSessions, sampleServers, serverAccess, friendJoinAccess, createServerPreview, reservedServerCards, updateGroupMembership } from './social.js';
 import { genres, cosmeticSlots, creatorTypes, settingsSections, gameDetails, recommendGames, recommendationGenres, discoverGames, connections, mutualFriends, sampleFavorites, marketplaceAssets, assetMatches } from './platform.js';
 
@@ -33,9 +33,8 @@ function setAppearance(changes){appearance=normalizeAppearance({...appearance,..
 applyAppearance(appearance,document.documentElement,themeMedia.matches);
 themeMedia.addEventListener('change',()=>applyAppearance(appearance,document.documentElement,themeMedia.matches));
 window.addEventListener('storage',event=>{if(event.key==='metallic-appearance-v1'){appearance=loadAppearance(storage);applyAppearance(appearance,document.documentElement,themeMedia.matches);if(route==='settings'&&params.get('section')==='themes')render();}});
-let route, params, category = 'All', sort = 'recommended', friendTab = 'All friends', wardrobeTab = 'Outfits', platform = 'Windows';
-let selectedOutfit = state.outfit, selectedColor = state.color, selectedAccessory = state.accessory;
-let avatarBack = false, settingsDirty = false, notificationsOpen = false;
+let route, params, category = 'All', sort = 'recommended', friendTab = 'All friends', platform = 'Windows';
+let settingsDirty = false, notificationsOpen = false;
 const app = document.querySelector('#app');
 const dialog = document.querySelector('#dialog');
 const inviteGate=createInviteGate({endpoint:document.querySelector('meta[name="metallic-beta-api"]')?.content||''});
@@ -111,9 +110,13 @@ const icons = {
 function icon(name, size = 20) { return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.explore}</svg>`; }
 function presenceDot(name) {
   const status=presenceFor(state,name);
-  return `<i class="presence ${status.key}" role="img" aria-label="${status.label}" title="${status.label}"></i>`;
+  return `<i class="presence ${status.key}" data-presence="${status.key}" role="img" aria-label="${status.label}" title="${status.label}"></i>`;
 }
 const brand = () => `<a class="brand" href="${['','login','signup'].includes(route)?'#/':'#/home'}"><span class="brand-glyph">M</span><span class="brand-word">Metallic <span class="brand-beta">BETA</span></span></a>`;
+function activityText(name,text='') {
+  const status=activityFor(state,name);
+  return `<span class="activity-text" data-presence="${status.key}">${esc(text||status.text)}</span>`;
+}
 const referenceAvatar = (_index = 0, cls = '') => genericAvatar(cls, '');
 const avatar = (index = 0, cls = '') => index === 0 ? portrait(state, cls) : referenceAvatar(index, cls);
 const link = (to, text, cls = 'button primary') => `<a class="${cls}" href="#/${to}">${text}</a>`;
@@ -163,7 +166,7 @@ function landing() {
 function friendStrip() {
   return `<section class="home-section friends-section"><div class="section-top"><h2>Friends <span class="muted">(${state.friends.length})</span></h2>${link('friends','See all '+icon('arrow',15),'view-all')}</div>
     <div class="friends-list"><a class="friend" href="#/friends?tab=find"><span class="friend-picture add">${icon('create',28)}</span><span class="friend-name">Add friends</span><span class="friend-activity">Find your people</span></a>
-    ${state.friends.slice(0,12).map(name => { const person=personInfo(name), activity=friendActivity(state,name); return `<div class="friend home-friend-preview" data-friend-preview="${esc(name)}"><a class="friend-profile" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${referenceAvatar(person.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span></a><button type="button" class="friend-activity activity-trigger" data-action="friend-preview" aria-label="See activity for ${esc(name)}" aria-controls="friend-activity-popover" aria-expanded="false">${activity?'In game':esc(person.activity)} ${icon('arrow',10)}</button></div>`; }).join('')}</div>
+    ${state.friends.slice(0,12).map(name => { const person=personInfo(name), activity=friendActivity(state,name); return `<div class="friend home-friend-preview" data-friend-preview="${esc(name)}"><a class="friend-profile" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${referenceAvatar(person.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span></a><button type="button" class="friend-activity activity-trigger" data-action="friend-preview" aria-label="See activity for ${esc(name)}" aria-controls="friend-activity-popover" aria-expanded="false">${activityText(name,activity?'In game':'')} ${icon('arrow',10)}</button></div>`; }).join('')}</div>
     <div id="friend-activity-popover" class="friend-activity-popover" popover="manual" role="region" aria-label="Friend activity"></div></section>`;
 }
 function home() {
@@ -233,7 +236,7 @@ function auth() {
 }
 function download() { return `${pageHead('The adventure starts here.','Your home for every Metallic game.')}<section class="download-hero"><div><span class="eyebrow">METALLIC LAUNCHER</span><h2>Less waiting.<br>More playing.</h2><p>One home for your games, your friends, and whatever you discover next.</p><div class="categories">${['Windows','macOS','Linux'].map(p=>button('platform',p,`cat ${platform===p?'selected':''}`,`data-value="${p}" aria-pressed="${platform===p}"`)).join('')}</div><button class="button primary download-button" disabled>${icon('download')} ${platform} release coming soon</button><p class="fine-print">The launcher is in development. An installer will appear here when an official release is available.</p></div><div class="launcher-mock"><div class="window-dots"><i></i><i></i><i></i><span>Metallic Launcher · Preview</span></div><img src="art/game-1.svg" alt="Launcher game preview"><div><strong>Your next adventure</strong><span>Cyber Raven: Neon Protocol</span><span class="launch-preview">${icon('play',15)} Jump in</span></div></div></section><div class="feature-columns download-features"><article><span class="step">01</span><h3>Get the launcher</h3><p>Download the official installer for your device when it becomes available.</p></article><article><span class="step">02</span><h3>Make yourself at home</h3><p>Sign in with your Metallic account and bring your identity with you.</p></article><article><span class="step">03</span><h3>Find your next favorite</h3><p>Explore games and jump into something new.</p></article></div><div class="panel"><h3>${platform} availability</h3><p class="muted">Release date, supported ${platform} versions, and system requirements will be confirmed with the first official launcher build.</p></div>`; }
 function wardrobe() {
-  return `${pageHead('Wardrobe','Avatar customization is still in development.')}<section class="wardrobe-wip"><span class="wip-symbol">${icon('wardrobe',52)}</span><span class="beta-pill">WORK IN PROGRESS</span><h2>Nothing to see here yet.</h2><p>We’re building the wardrobe. Check back as Metallic takes shape.</p>${link('home','Back to Home '+icon('arrow',16),'button')}</section>`;
+  return `${pageHead('Wardrobe','Avatar customization is still in development.')}<section class="wardrobe-wip"><span class="wip-symbol">${icon('wardrobe',48)}</span><h2>Work in progress</h2><p>Nothing to see here yet.</p>${link('home','Back to Home '+icon('arrow',16),'button')}</section>`;
 }
 function create(){return creatorWorkspace.createPage();}
 const packs = [{amount:400,price:'$4.99'},{amount:800,price:'$9.99'},{amount:1700,price:'$19.99'},{amount:4500,price:'$49.99'}];
@@ -251,7 +254,7 @@ function profile() {
   const favoritePage=pageWindow(favorites,params.get('favoritePage'));
   const friendAction=state.friends.includes(name)?button('remove-friend','Friends '+icon('check',16),'button',`data-name="${esc(name)}"`):state.requests.includes(name)?button('accept-friend','Accept request','button primary',`data-name="${esc(name)}"`):state.outgoing.includes(name)?button('cancel-friend','Cancel request','button',`data-name="${esc(name)}"`):button('add-friend','Add friend','button primary',`data-name="${esc(name)}"`);
   return `${preview}<section class="profile-cover"><div class="cover-mark">M</div><span class="eyebrow">${own?'YOUR CORNER OF METALLIC':'PLAYER PROFILE'}</span></section>
-    <section class="profile-header">${own?avatar(0,'profile-avatar'):referenceAvatar(person.avatar,'profile-avatar')}<div><h1>${accountName(name)}</h1><p>@${esc(name)} ${own?(state.activity?'<span class="profile-online">● Online in preview</span>':''):`<span class="profile-online">${person.activity}</span>`}</p>
+    <section class="profile-header">${own?avatar(0,'profile-avatar'):referenceAvatar(person.avatar,'profile-avatar')}<div><h1>${accountName(name)}</h1><p>@${esc(name)} <span class="profile-online">${activityText(name)}</span></p>
     ${!own&&access.friends?`<a class="mutual-summary" href="#/profile?user=${encodeURIComponent(name)}&friends=mutual"><span>${mutual.length} mutual friend${mutual.length===1?'':'s'}</span></a>`:''}</div><div class="profile-header-action">${own?link('settings?section=account','Edit profile','button'):friendAction}</div></section>
     <div class="account-profile-layout"><div class="profile-main-column">
     ${access.friends?profileFriends(friends,own,mutual,params.get('friends')==='mutual',!!viewAs):privateProfileSection('Friends list')}
@@ -307,7 +310,7 @@ function friends() {
     <div class="friends-toolbar"><div class="line-tabs" role="group" aria-label="Friends categories">${Object.entries(friendTabs).map(([key,label])=>button('friend-tab',label+(['Requests','Sent'].includes(label)?` <span>${label==='Requests'?state.requests.length:state.outgoing.length}</span>`:''),friendTab===label?'selected':'',`data-value="${key}" aria-pressed="${friendTab===label}"`)).join('')}</div>
     <form id="friend-search" class="top-search">${icon('search',17)}<input type="search" maxlength="160" name="person" aria-label="Search people" placeholder="Search people" value="${esc(query)}"><button class="search-submit" type="submit" aria-label="Find people by name">${icon('arrow',16)}</button></form></div>
     <p class="result-count" role="status">${shown.length} ${friendTab==='Requests'?'pending request'+(shown.length===1?'':'s'):friendTab==='Sent'?'sent request'+(shown.length===1?'':'s'):friendTab==='Find people'?'people to discover':'friend'+(shown.length===1?'':'s')}${query?' matching “'+esc(query)+'”':''}</p>
-    <div class="friend-grid">${friendPage.items.map(name=>{const p=personInfo(name);const sent=state.outgoing.includes(name);return `<article class="panel friend-card"><a class="friend-card-identity" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${referenceAvatar(p.avatar)}${presenceDot(name)}</span><h3>${accountName(name)}</h3></a><p class="muted">${friendTab==='Requests'?'Wants to connect':friendTab==='Sent'||sent?'Request pending':p.activity}</p><div class="button-row">
+    <div class="friend-grid">${friendPage.items.map(name=>{const p=personInfo(name);const sent=state.outgoing.includes(name);return `<article class="panel friend-card"><a class="friend-card-identity" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${referenceAvatar(p.avatar)}${presenceDot(name)}</span><h3>${accountName(name)}</h3></a><p class="muted">${friendTab==='Requests'?'Wants to connect':friendTab==='Sent'||sent?'Request pending':activityText(name)}</p><div class="button-row">
       ${friendTab==='Requests'?button('accept-friend','Accept','button primary small',`data-name="${esc(name)}"`)+button('decline-friend','Ignore','button small',`data-name="${esc(name)}"`):friendTab==='Sent'||sent?button('cancel-friend','Cancel request','button small',`data-name="${esc(name)}"`):friendTab==='Find people'?button('add-friend',icon('create',14)+' Add friend','button primary small',`data-name="${esc(name)}"`):link('profile?user='+encodeURIComponent(name),'View profile','button small')+button('remove-friend','Remove','button quiet small',`data-name="${esc(name)}"`)}</div></article>`;}).join('')}</div>
     ${pageLinks(friendPage,'friends')}
     ${!shown.length?empty(query?'No people found':friendTab==='Requests'?'All caught up':friendTab==='Sent'?'No pending requests':'Find your people',query?'Try a different name.':friendTab==='Requests'?'New friend requests will appear here.':'Discover someone new to explore with.',query?button('clear-people','Clear search','button primary'):link('friends?tab=find','Find people')):''}
@@ -335,7 +338,7 @@ function profileFriends(names, owner, mutual=[], mutualOnly=false, preview=false
   const displayed=mutualOnly?mutual:names, friendPage=pageWindow(displayed,params.get('friendPage'));
   return `<section class="profile-section profile-friends"><div class="section-top"><h2>Friends <span class="muted">(${names.length})</span></h2>${owner&&!preview?link('friends','See all →','view-all'):''}</div>
     ${!owner?`<div class="profile-friend-filters">${link('profile?user='+encodeURIComponent(params.get('user')||state.profile.name),'All friends',!mutualOnly?'selected':'')}${link('profile?user='+encodeURIComponent(params.get('user')||state.profile.name)+'&friends=mutual',`Mutual friends (${mutual.length})`,mutualOnly?'selected':'')}</div>`:''}
-    ${displayed.length?`<div class="friends-list">${friendPage.items.map(name=>{const info=name===state.profile.name?{name,activity:state.activity?'Online':'Offline',avatar:0}:personInfo(name);return `<a class="friend" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${info.avatar===0?avatar():referenceAvatar(info.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span><span class="friend-activity">${mutual.includes(name)?'Mutual friend':info.activity}</span></a>`;}).join('')}</div>`:`<div class="inline-empty">${mutualOnly?'You don’t share any friends yet.':'No friends to show yet.'}${owner&&!preview?' '+link('friends?tab=find','Find people →','text-link'):''}</div>`}${pageLinks(friendPage,'profile friends','friendPage')}</section>`;
+    ${displayed.length?`<div class="friends-list">${friendPage.items.map(name=>{const info=name===state.profile.name?{name,activity:state.activity?'Online':'Offline',avatar:0}:personInfo(name);return `<a class="friend" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${info.avatar===0?avatar():referenceAvatar(info.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span><span class="friend-activity">${mutual.includes(name)?'Mutual friend':activityText(name)}</span></a>`;}).join('')}</div>`:`<div class="inline-empty">${mutualOnly?'You don’t share any friends yet.':'No friends to show yet.'}${owner&&!preview?' '+link('friends?tab=find','Find people →','text-link'):''}</div>`}${pageLinks(friendPage,'profile friends','friendPage')}</section>`;
 }
 function settingsForm(section,fields) {
   return `<form id="settings-form" class="settings-form section-settings-form" data-section="${section}"><section class="panel"><h2>${settingsSections[section][0]}</h2><p class="settings-description">${settingsSections[section][1]}</p>${fields}</section><div class="settings-save"><span class="muted small-text">Saved to this browser</span><button type="submit" class="button primary">${icon('check',17)} Save changes</button></div></form>`;
@@ -527,7 +530,7 @@ function showFriendPreview(trigger) {
   if(activeFriendTrigger===trigger&&menu.matches(':popover-open'))return;
   closeFriendPreview();activeFriendTrigger=trigger;
   const name=trigger.dataset.friendPreview, info=personInfo(name), activity=friendActivity(state,name);
-  menu.innerHTML=`<span class="friend-popover-label">${accountName(name)} · ${activity?'Playing now':esc(info.activity)}</span>${activity?`<a class="friend-playing-game" href="#/game/${activity.game.id}"><img src="${activity.game.art}" alt=""><span><strong>${esc(activity.game.title)}</strong><small>${esc(activity.game.genre)}</small></span></a><div class="friend-popover-actions">${link('profile?user='+encodeURIComponent(name),'View profile','text-link')}${button('join-friend',activity.access.allowed?'Join':activity.access.reason,'button primary small',`data-name="${esc(name)}" ${activity.access.allowed?'':'disabled'}`)}</div>`:`<p>${info.activity==='Offline'?'This friend is offline.':'This friend isn’t playing a game right now.'}</p>${link('profile?user='+encodeURIComponent(name),'View profile →','text-link')}`}`;
+  menu.innerHTML=`<span class="friend-popover-label">${accountName(name)} · ${activityText(name,activity?'Playing now':'')}</span>${activity?`<a class="friend-playing-game" href="#/game/${activity.game.id}"><img src="${activity.game.art}" alt=""><span><strong>${esc(activity.game.title)}</strong><small>${esc(activity.game.genre)}</small></span></a><div class="friend-popover-actions">${link('profile?user='+encodeURIComponent(name),'View profile','text-link')}${button('join-friend',activity.access.allowed?'Join':activity.access.reason,'button primary small',`data-name="${esc(name)}" ${activity.access.allowed?'':'disabled'}`)}</div>`:`<p>${info.activity==='Offline'?'This friend is offline.':'This friend isn’t playing a game right now.'}</p>${link('profile?user='+encodeURIComponent(name),'View profile →','text-link')}`}`;
   menu.setAttribute('aria-label',name+' activity');menu.showPopover();
   trigger.querySelector('.activity-trigger').setAttribute('aria-expanded','true');
   const anchor=trigger.getBoundingClientRect(), rect=menu.getBoundingClientRect();
@@ -616,13 +619,6 @@ document.addEventListener('click',async e=>{
     case 'password':{const input=document.querySelector('#password');const show=input.type==='password';input.type=show?'text':'password';el.textContent=show?'Hide':'Show';el.setAttribute('aria-label',show?'Hide password':'Show password');el.setAttribute('aria-pressed',String(show));break;}
     case 'recovery':modal('Account recovery',`<p class="muted">Account recovery will be available through the beta account service. Contact the Metallic team if you need help with your tester account.</p>${link('login','Back to log in','button primary full')}`);break;
     case 'platform':platform=value;render();break;
-    case 'wardrobe-tab':wardrobeTab=value;render();break;
-    case 'outfit':if(outfits.includes(value))selectedOutfit=value;render();break;
-    case 'accessory':if(accessories.includes(value))selectedAccessory=value;render();break;
-    case 'color':if(colors.some(c=>c.value===value))selectedColor=value;render();break;
-    case 'rotate-avatar':avatarBack=!avatarBack;render();break;
-    case 'save-outfit':state.outfit=selectedOutfit;state.color=selectedColor;state.accessory=selectedAccessory;persist('Look saved. Your profile is up to date.');render();break;
-    case 'reset-outfit':selectedOutfit=state.outfit;selectedColor=state.color;selectedAccessory=state.accessory;render();toast('Restored your saved look.');break;
     case 'create-server':serverEditor(id);break;
     case 'manage-server':{const server=state.reservedServers.find(server=>server.id===id);if(server)serverEditor(server.gameId,server);break;}
     case 'join-server':{
@@ -652,8 +648,8 @@ document.addEventListener('click',async e=>{
     }
     case 'remove-friend':modal('Remove friend?',`<p>Remove ${esc(name)} from your preview friends?</p>${button('confirm-remove','Remove friend','button danger',`data-name="${esc(name)}"`)} ${button('close-dialog','Keep friend','button')}`);break;
     case 'confirm-remove':updateFriendship(state,'remove',name);persist('Friend removed.');dialog.close();render();break;
-    case 'reset-demo':modal('Reset this preview?',`<p class="muted">Your favorites, outfits, profile changes, imported files, and local groups will be removed.</p>${button('confirm-reset','Reset preview','button danger')} ${button('close-dialog','Keep my data','button')}`);break;
-    case 'confirm-reset':try{await clearFiles();}catch{toast('Could not clear local files. Try again.');break;}state=loadState({getItem:()=>null});selectedOutfit=state.outfit;selectedColor=state.color;selectedAccessory=state.accessory;settingsDirty=false;persist('Preview reset.');dialog.close();render();break;
+    case 'reset-demo':modal('Reset this preview?',`<p class="muted">Your favorites, profile changes, imported files, and local groups will be removed.</p>${button('confirm-reset','Reset preview','button danger')} ${button('close-dialog','Keep my data','button')}`);break;
+    case 'confirm-reset':try{await clearFiles();}catch{toast('Could not clear local files. Try again.');break;}state=loadState({getItem:()=>null});settingsDirty=false;persist('Preview reset.');dialog.close();render();break;
   }
 });
 document.addEventListener('submit',async e=>{
