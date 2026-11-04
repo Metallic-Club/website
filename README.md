@@ -209,12 +209,12 @@ favorite controls and a compact friends panel. Each horizontal list renders at
 most eight games; the Favorites section links to the full profile library when
 needed. Recommendations exclude recent and saved games.
 
-Explore starts with search, genre shortcuts, and a paginated list or grid. Optional
+Explore starts with search, the genre selector, and a paginated grid (list view is optional). Optional
 filters combine genre, play style, mood, a specific tag, rating, and hidden
 favorites. Tag matching is exact and case-insensitive; the selector lists known
 tags. Search, sorting, layout changes, and pagination preserve filters in the URL.
 The read-only catalog endpoint also receives `tag` (up to 30 characters); only
-12 results render per page. Browser-only favorite/hide controls stay local.
+12 results render per page. Browser-only favorite controls stay local.
 
 Each sample game has a Game passes tab with one-time cosmetic extras. Viewing a
 pass opens an explicit browser-only purchase preview. Confirming deducts its cost
@@ -223,3 +223,7 @@ insufficient balances are rejected. These values are editable demo data, never
 authorization, real balances, or live entitlements. A production purchase service
 must use authenticated, atomic transactions and server-owned inventory. Remote
 catalog games show an unconnected passes state until that service exists.
+
+Genre labels are shared by discovery, interests, routes, and the sample catalog.
+Older Obby, Roleplay, and Racing preferences and links migrate to the updated
+labels. Example achievement definitions remain stable when a genre changes.

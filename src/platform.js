@@ -1,6 +1,7 @@
+import {genres,normalizeGenre} from './genres.js';
+export {genres} from './genres.js';
 import { compactCount } from './pagination.js';
 // Sample content and client-side discovery for the platform preview.
-export const genres = ['Action', 'Adventure', 'Roleplay', 'Obby', 'Simulation', 'Racing'];
 export const cosmeticSlots = ['Hats', 'Shirts', 'Pants', 'Shoes', 'Shoulders', 'Back', 'Neck', 'Face', 'Waist'];
 export const creatorTypes = { games: 'Games', templates: 'Templates', models: 'Models & meshes', textures: 'Textures & materials', audio: 'Audio & music', plugins: 'Plugins', cosmetics: 'Cosmetics' };
 export const settingsSections = {
@@ -62,7 +63,7 @@ export function recommendGames(catalog, state) {
 }
 export function discoverGames(catalog, state, params) {
   const query = (params.get('q') || '').trim().toLowerCase();
-  const category = params.get('category') || 'All';
+  const category = normalizeGenre(params.get('category')) || params.get('category') || 'All';
   const minRating = Number(params.get('rating') || 0);
   const mode = params.get('mode') || 'All';
   const mood = params.get('mood') || 'All';

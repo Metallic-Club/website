@@ -10,7 +10,7 @@ export const games = [
   {
     "id": "2",
     "title": "Metallic Obby Sprint",
-    "genre": "Obby",
+    "genre": "Obby & Platformer",
     "rating": 95,
     "playing": "8.9K",
     "art": "art/game-2.svg"
@@ -42,7 +42,7 @@ export const games = [
   {
     "id": "6",
     "title": "Raven Blox RP City",
-    "genre": "Roleplay",
+    "genre": "Roleplay & Avatar Sim",
     "rating": 91,
     "playing": "19K",
     "art": "art/game-6.svg"
@@ -50,7 +50,7 @@ export const games = [
   {
     "id": "10",
     "title": "Deepwater Survival",
-    "genre": "Adventure",
+    "genre": "Survival",
     "rating": 90,
     "playing": "16K",
     "art": "art/game-10.svg"
@@ -66,7 +66,7 @@ export const games = [
   {
     "id": "9",
     "title": "Neon Drift Circuit",
-    "genre": "Racing",
+    "genre": "Sports & Racing",
     "rating": 87,
     "playing": "9.6K",
     "art": "art/game-9.svg"
@@ -74,7 +74,7 @@ export const games = [
   {
     "id": "8",
     "title": "City of Ashfall",
-    "genre": "Adventure",
+    "genre": "Survival",
     "rating": 90,
     "playing": "7.4K",
     "art": "art/game-8.svg"
@@ -82,7 +82,7 @@ export const games = [
   {
     "id": "12",
     "title": "Hollow Night Tactics",
-    "genre": "Action",
+    "genre": "Strategy",
     "rating": 88,
     "playing": "4.1K",
     "art": "art/game-12.svg"
@@ -106,7 +106,7 @@ export const games = [
   {
     "id": "14",
     "title": "Iron Vanguard",
-    "genre": "Action",
+    "genre": "Shooter",
     "rating": 84,
     "playing": "3.2K",
     "art": "art/game-14.svg"
@@ -132,7 +132,7 @@ export const games = [
   {
     "id": "17",
     "title": "Frostbound Expedition",
-    "genre": "Adventure",
+    "genre": "Survival",
     "rating": 91,
     "playing": "4.7K",
     "art": "art/game-17.svg",
@@ -150,7 +150,7 @@ export const games = [
   {
     "id": "19",
     "title": "Reactor Rush",
-    "genre": "Action",
+    "genre": "Puzzle",
     "rating": 93,
     "playing": "8.4K",
     "art": "art/game-19.svg",
@@ -159,7 +159,7 @@ export const games = [
   {
     "id": "20",
     "title": "Prism Defenders",
-    "genre": "Action",
+    "genre": "Strategy",
     "rating": 95,
     "playing": "15K",
     "art": "art/game-20.svg",
@@ -168,7 +168,7 @@ export const games = [
   {
     "id": "21",
     "title": "Cloud Hop",
-    "genre": "Obby",
+    "genre": "Obby & Platformer",
     "rating": 94,
     "playing": "9.2K",
     "art": "art/game-21.svg",
@@ -177,7 +177,7 @@ export const games = [
   {
     "id": "22",
     "title": "Lava Leap",
-    "genre": "Obby",
+    "genre": "Obby & Platformer",
     "rating": 89,
     "playing": "5.6K",
     "art": "art/game-22.svg",
@@ -186,7 +186,7 @@ export const games = [
   {
     "id": "23",
     "title": "Gravity Steps",
-    "genre": "Obby",
+    "genre": "Obby & Platformer",
     "rating": 92,
     "playing": "7.3K",
     "art": "art/game-23.svg",
@@ -222,7 +222,7 @@ export const games = [
   {
     "id": "27",
     "title": "Maplewood Town",
-    "genre": "Roleplay",
+    "genre": "Roleplay & Avatar Sim",
     "rating": 94,
     "playing": "21K",
     "art": "art/game-27.svg",
@@ -231,7 +231,7 @@ export const games = [
   {
     "id": "28",
     "title": "Sunset Boardwalk",
-    "genre": "Roleplay",
+    "genre": "Roleplay & Avatar Sim",
     "rating": 92,
     "playing": "13K",
     "art": "art/game-28.svg",
@@ -240,7 +240,7 @@ export const games = [
   {
     "id": "29",
     "title": "Metro Junction",
-    "genre": "Roleplay",
+    "genre": "Roleplay & Avatar Sim",
     "rating": 90,
     "playing": "9.4K",
     "art": "art/game-29.svg",
@@ -249,7 +249,7 @@ export const games = [
   {
     "id": "30",
     "title": "Alpine Rally",
-    "genre": "Racing",
+    "genre": "Sports & Racing",
     "rating": 95,
     "playing": "14K",
     "art": "art/game-30.svg",
@@ -258,7 +258,7 @@ export const games = [
   {
     "id": "31",
     "title": "Coastal Karting",
-    "genre": "Racing",
+    "genre": "Sports & Racing",
     "rating": 93,
     "playing": "16K",
     "art": "art/game-31.svg",
@@ -267,7 +267,7 @@ export const games = [
   {
     "id": "32",
     "title": "Orbit Speedway",
-    "genre": "Racing",
+    "genre": "Sports & Racing",
     "rating": 91,
     "playing": "7.9K",
     "art": "art/game-32.svg",
