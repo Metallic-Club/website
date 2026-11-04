@@ -1,3 +1,4 @@
+import {normalizePasses} from './game-passes.js';
 import {normalizeNewsState} from './group-news.js';
 import {normalizeYoutubeUrl} from './account-roles.js';
 import {normalizePrivacy} from './privacy.js';
@@ -17,6 +18,7 @@ export const colors = [
   { value: '#24262b', name: 'Charcoal' }, { value: '#d97c47', name: 'Terracotta' },
 ];
 export const defaults = {
+  gamePasses: [],
   privacy: normalizePrivacy(),
   groupNewsPosts: [], groupNewsSubscriptions: {}, discordPreview: false,
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone', youtubeUrl: '' },
@@ -37,6 +39,7 @@ export function loadState(storage) {
     const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || Array.isArray(data)) return state;
     state.privacy = normalizePrivacy(data.privacy);
+    state.gamePasses = normalizePasses(data.gamePasses);
     if (Array.isArray(data.favorites)) state.favorites = unique(data.favorites, id => gameIds.has(id));
     if (Array.isArray(data.hiddenGames)) state.hiddenGames = unique(data.hiddenGames, id => gameIds.has(id));
     if (Array.isArray(data.preferredGenres)) state.preferredGenres = unique(data.preferredGenres, genre => genres.includes(genre), 6);
