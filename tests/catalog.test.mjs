@@ -31,6 +31,20 @@ test('popular sorting compares complete magnitudes and ties are deterministic',(
   const repo=createLocalCatalog([game(3,'999K'),game(1,'1M'),game(2,'1M')]);
   assert.deepEqual(repo.list(new URLSearchParams('sort=players'),state).items.map(item=>item.id),['1','2','3']);
 });
+test('specific tags combine with other filters and have separate cache entries',()=>{
+  const catalog=[{...game(1),genre:'Adventure',metadata:{mode:'Co-op',mood:'Immersive',tags:['Survival','Ocean']}},{...game(2),genre:'Adventure',metadata:{mode:'Solo',mood:'Immersive',tags:['Survival']}},{...game(3),genre:'Adventure',metadata:{mode:'Co-op',mood:'Immersive',tags:['Building']}},{...game(4),genre:'Racing',metadata:{mode:'Co-op',mood:'Competitive',tags:['Survival']}}];
+  const repo=createLocalCatalog(catalog);
+  assert.deepEqual(repo.list(new URLSearchParams('category=Adventure&mode=Co-op&tag=survival'),state).items.map(game=>game.id),['1']);
+  assert.deepEqual(repo.list(new URLSearchParams('category=Adventure&mode=Co-op&tag=Building'),state).items.map(game=>game.id),['3']);
+  assert.equal(repo.list(new URLSearchParams('tag=unknown'),state).total,0);
+  assert.equal(repo.list(new URLSearchParams(),state).total,4);
+});
+test('remote catalog forwards a bounded tag without sending browser-only filters',async()=>{
+  let query;
+  const client=createCatalogClient({local,endpoint:'https://api.example.com',fetchImpl:async url=>{query=url.searchParams;return response({items:[game(1)],total:1});}});
+  await client.list(new URLSearchParams({tag:'x'.repeat(80),unplayed:'1',view:'grid',token:'private'}),state);
+  assert.equal(query.get('tag'),'x'.repeat(30));assert.equal(query.get('unplayed'),null);assert.equal(query.get('view'),null);assert.equal(query.get('token'),null);
+});
 test('catalog client caches bounded pages, normalizes query input and avoids exposing account preferences',async()=>{
   let calls=0,last;
   const client=createCatalogClient({local,endpoint:'https://api.example.com',fetchImpl:async url=>{calls++;last=url;return response({items:[game(1)],total:1});}});

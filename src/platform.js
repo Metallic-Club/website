@@ -66,12 +66,12 @@ export function discoverGames(catalog, state, params) {
   const minRating = Number(params.get('rating') || 0);
   const mode = params.get('mode') || 'All';
   const mood = params.get('mood') || 'All';
-  const hideFavorites = params.get('unplayed') === '1';
+  const hideFavorites = params.get('unplayed') === '1',tag=(params.get('tag')||'').trim().slice(0,30).toLowerCase();
   let result = recommendGames(catalog, state).filter(game => {
     const info = game.metadata || gameDetails[game.id] || { tags: [], mode: 'Multiplayer', mood: 'Immersive' };
     return (!query || `${game.title} ${game.genre} ${info.tags.join(' ')}`.toLowerCase().includes(query))
       && (category === 'All' || game.genre === category) && game.rating >= minRating
-      && (mode === 'All' || info.mode === mode) && (mood === 'All' || info.mood === mood)
+      && (mode === 'All' || info.mode === mode) && (mood === 'All' || info.mood === mood) && (!tag || info.tags.some(value=>value.toLowerCase()===tag))
       && (!hideFavorites || !state.favorites.includes(game.id));
   });
   const sort = params.get('sort');
