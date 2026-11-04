@@ -6,8 +6,8 @@ import { recommendGames, discoverGames, gameDetails, mutualFriends, marketplaceA
 
 test('game recommendations respond to selected genres and saved favorites', () => {
   const state = structuredClone(defaults);
-  state.preferredGenres = ['Racing'];
-  assert.equal(recommendGames(games, state)[0].genre, 'Racing');
+  state.preferredGenres = ['Sports & Racing'];
+  assert.equal(recommendGames(games, state)[0].genre, 'Sports & Racing');
   state.preferredGenres = [];
   state.favorites = ['5'];
   const recommended = recommendGames(games, state);
@@ -53,7 +53,7 @@ test('imported assets and game preferences are normalized before rendering', () 
     creatorAssets: [{ id: 'asset-1', name: ' Shoes ', type: 'cosmetics', subcategory: 'Shoes', price: 125, files: [{key:'asset-1-0',name:'shoes.glb',size:120,mime:'model/gltf-binary'}] },
       { id: 'asset-1', name: 'Duplicate', type: 'cosmetics' }, { id: 'bad', name: 'Invalid', type: '__proto__' }],
     savedAssets: ['orbit-shoes', '"><img>'], readNotifications: ['welcome', 'request-PixelNova'] }) });
-  assert.deepEqual(state.preferredGenres, ['Racing']);
+  assert.deepEqual(state.preferredGenres, ['Sports & Racing']);
   assert.equal(state.creatorAssets.length, 1);
   assert.equal(state.creatorAssets[0].name, 'Shoes');
   assert.equal(state.creatorAssets[0].price, 0);

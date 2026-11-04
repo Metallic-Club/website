@@ -1,3 +1,4 @@
+import {sampleGenreFamily} from './genres.js';
 // Illustrative gameplay records for the website preview. Launcher activity is
 // not measured by the browser; live progress will come from the game service.
 const sets={
@@ -49,7 +50,7 @@ export function formatPlaytime(value){
   const minutes=Number.isFinite(value)?Math.max(0,Math.floor(value)):0,hours=Math.floor(minutes/60),remaining=minutes%60;
   return hours?hours.toLocaleString('en-US')+'h'+(remaining?' '+remaining+'m':''):minutes+'m';
 }
-export function achievementsFor(game){return (sets[game.genre]||sets.Adventure).map(([key,name,description])=>({id:game.id+':'+key,key,name,description}));}
+export function achievementsFor(game){return (sets[sampleGenreFamily(game.genre)]||sets.Adventure).map(([key,name,description])=>({id:game.id+':'+key,key,name,description}));}
 export function playerGameProgress(game,name,currentUsername){
   const record=recordsFor(name,currentUsername).find(([id])=>id===game.id),earned=new Set(record?.[2]||[]);
   const achievements=achievementsFor(game).map(item=>({...item,unlocked:earned.has(item.key)}));

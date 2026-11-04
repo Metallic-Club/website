@@ -21,13 +21,17 @@ test('saved games have their own bounded rail and stay out of recommendations',(
   const many=make('',{favorites:games.map(game=>game.id)}).ui.home();const bounded=many.split('id="favorite-games"')[1].split('</section>')[0];assert.equal((bounded.match(/data-game=/g)||[]).length,8);assert.match(many,/View all 32/);
 });
 test('explore respects filters and paging without inserting unrelated featured games',()=>{
-  const filtered=make('category=Racing&rating=90').ui.explore();assert.doesNotMatch(filtered,/store-showcase/);assert.match(filtered,/Matching games/);assert.match(filtered,/Remove Racing filter/);assert.doesNotMatch(filtered,/Cyber Raven/);
-  const second=make('page=2').ui.explore();assert.doesNotMatch(second,/store-showcase/);assert.match(second,/Page 2 of 3/);assert.equal((second.match(/class="store-game-row"/g)||[]).length,12);
+  const filtered=make('category=Sports+%26+Racing&rating=90&view=list').ui.explore();assert.doesNotMatch(filtered,/store-showcase/);assert.match(filtered,/Matching games/);assert.match(filtered,/Remove Sports &amp; Racing filter/);assert.doesNotMatch(filtered,/Cyber Raven/);
+  const second=make('page=2&view=list').ui.explore();assert.doesNotMatch(second,/store-showcase/);assert.match(second,/Page 2 of 3/);assert.equal((second.match(/class="store-game-row"/g)||[]).length,12);
 });
 test('list and grid controls preserve filters and escape search terms',()=>{
   const html=make('view=grid&category=Action&q=%3Cscript%3E').ui.explore();assert.match(html,/store-results-grid|No games match these filters/);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>/);assert.match(html,/category=Action/);
-  const list=make().ui.explore();assert.equal((list.match(/class="store-game-row"/g)||[]).length,12);assert.match(list,/game-search-form/);assert.match(list,/<details class="store-refine">/);assert.doesNotMatch(list,/store-showcase/);
+  const list=make('view=list').ui.explore();assert.equal((list.match(/class="store-game-row"/g)||[]).length,12);assert.match(list,/game-search-form/);assert.match(list,/<details class="store-refine">/);assert.doesNotMatch(list,/store-showcase/);
 });
 test('specific tags remain visible in filter chips and survive switching layouts',()=>{
-  const html=make('category=Adventure&mode=Co-op&tag=Survival').ui.explore();assert.match(html,/Tag: Survival/);assert.match(html,/Remove Survival filter/);assert.match(html,/tag=Survival/);assert.match(html,/value="Survival"/);assert.doesNotMatch(html,/Cyber Raven: Neon Protocol/);
+  const html=make('category=Survival&mode=Co-op&tag=Survival').ui.explore();assert.match(html,/Tag: Survival/);assert.match(html,/Remove Survival filter/);assert.match(html,/tag=Survival/);assert.match(html,/value="Survival"/);assert.doesNotMatch(html,/Cyber Raven: Neon Protocol/);
+});
+test('Explore defaults to a grid, exposes every genre, and has no disinterest controls',()=>{
+  const html=make().ui.explore();assert.match(html,/class="game-grid store-results-grid"/);assert.doesNotMatch(html,/store-game-row|Not interested|hide-game|store-options|store-dismiss/);assert.match(html,/Education/);assert.match(html,/Obby &amp; Platformer/);assert.match(html,/Utility &amp; Other/);assert.match(html,/view=list/);
+  const list=make('view=list&category=Sports+%26+Racing').ui.explore();assert.equal((list.match(/class="store-game-row"/g)||[]).length,4);assert.doesNotMatch(list,/Not interested|hide-game/);assert.match(list,/Save Coastal Karting to favorites/);
 });

@@ -1,10 +1,11 @@
+import {sampleGenreFamily} from './genres.js';
 import {games} from './catalog.js';
 
 const styles={Adventure:['Explorer’s pack','Compass badge, trail effects, and an explorer nameplate.'],Action:['Arena collection','Victory effects, a profile banner, and a custom player nameplate.'],Obby:['Trail collection','Three colorful trails and a finish-line celebration.'],Simulation:['Builder’s collection','Decorative building finishes and a custom workshop sign.'],Roleplay:['City collection','A collection of room decorations and a custom player nameplate.'],Racing:['Pit crew collection','Vehicle paint finishes and a custom race number plate.']};
 const known=new Map(games.map(game=>[game.id,game]));
 export function passesFor(game){
   if(!game||!known.has(game.id))return [];
-  const [title,description]=styles[game.genre]||styles.Adventure;
+  const [title,description]=styles[sampleGenreFamily(game.genre)]||styles.Adventure;
   return [{key:'collection',title,description,price:150,icon:'wardrobe'},
     {key:'supporter',title:'Supporter pass',description:'A supporter nameplate and an exclusive chat title. A little thank-you for supporting this game.',price:250,icon:'heart'},
     {key:'effects',title:'Celebration pack',description:'Extra emotes and celebration effects to use with friends. Cosmetic extras only.',price:100,icon:'achievement'}]

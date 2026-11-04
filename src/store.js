@@ -1,3 +1,4 @@
+import {normalizeGenre} from './genres.js';
 import {normalizePasses} from './game-passes.js';
 import {normalizeNewsState} from './group-news.js';
 import {normalizeYoutubeUrl} from './account-roles.js';
@@ -42,7 +43,7 @@ export function loadState(storage) {
     state.gamePasses = normalizePasses(data.gamePasses);
     if (Array.isArray(data.favorites)) state.favorites = unique(data.favorites, id => gameIds.has(id));
     if (Array.isArray(data.hiddenGames)) state.hiddenGames = unique(data.hiddenGames, id => gameIds.has(id));
-    if (Array.isArray(data.preferredGenres)) state.preferredGenres = unique(data.preferredGenres, genre => genres.includes(genre), 6);
+    if (Array.isArray(data.preferredGenres)) state.preferredGenres = unique(data.preferredGenres.map(normalizeGenre), genre => genres.includes(genre), genres.length);
     for (const key of ['savedAssets', 'readNotifications']) if (Array.isArray(data[key])) state[key] = unique(data[key], value => typeof value === 'string' && /^[\w-]{1,80}$/.test(value));
     state.creatorAssets=normalizeAssets(data.creatorAssets);
     if(Array.isArray(data.inventory))state.inventory=unique(data.inventory,value=>typeof value==='string'&&/^[\w-]{1,80}$/.test(value));
@@ -71,6 +72,7 @@ export function saveState(storage, state) {
   try { const value=JSON.stringify(state);if(value.length>512000)return false;storage.setItem(STORAGE_KEY,value);return true; } catch { return false; }
 }
 export function filterGames(games, query = '', category = 'All', sort = 'recommended') {
+  category=normalizeGenre(category)||category;
   const result = games.filter(g => (category === 'All' || g.genre === category) && `${g.title} ${g.genre}`.toLowerCase().includes(query.trim().toLowerCase()));
   if (sort === 'players') {
     return result.sort((a, b) => compactCount(b.playing) - compactCount(a.playing));
