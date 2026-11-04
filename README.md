@@ -200,3 +200,19 @@ client secrets and access/refresh tokens server-side. The official bot should
 query that verified mapping through an authenticated server endpoint; editable
 names, submitted Discord IDs, and browser preview flags are not identity proof.
 OAuth reference: https://docs.discord.com/developers/topics/oauth2
+
+
+## Storefront and game passes
+
+Home keeps recent games, favorites, sample playtime, and friends together. Explore
+uses a manual featured-game picker and a paginated list, with an optional grid.
+Genres, interests, ratings, play styles, and sorting use the existing catalog
+service; only 12 search results render at a time. Featured picks do not autoplay.
+
+Each sample game has a Game passes tab with one-time cosmetic extras. Viewing a
+pass opens an explicit browser-only purchase preview. Confirming deducts its cost
+from `previewAlloy` and saves ownership in `gamePasses`; repeat purchases and
+insufficient balances are rejected. These values are editable demo data, never
+authorization, real balances, or live entitlements. A production purchase service
+must use authenticated, atomic transactions and server-owned inventory. Remote
+catalog games show an unconnected passes state until that service exists.
