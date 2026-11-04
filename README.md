@@ -196,10 +196,17 @@ OAuth reference: https://docs.discord.com/developers/topics/oauth2
 
 ## Storefront and game passes
 
-Home keeps recent games, favorites, sample playtime, and friends together. Explore
-uses a manual featured-game picker and a paginated list, with an optional grid.
-Genres, interests, ratings, play styles, and sorting use the existing catalog
-service; only 12 search results render at a time. Featured picks do not autoplay.
+Home shows separate Continue playing, Favorites, and For you lists, with one-click
+favorite controls and a compact friends panel. Each horizontal list renders at
+most eight games; the Favorites section links to the full profile library when
+needed. Recommendations exclude recent and saved games.
+
+Explore starts with search, genre shortcuts, and a paginated list or grid. Optional
+filters combine genre, play style, mood, a specific tag, rating, and hidden
+favorites. Tag matching is exact and case-insensitive; the selector lists known
+tags. Search, sorting, layout changes, and pagination preserve filters in the URL.
+The read-only catalog endpoint also receives `tag` (up to 30 characters); only
+12 results render per page. Browser-only favorite/hide controls stay local.
 
 Each sample game has a Game passes tab with one-time cosmetic extras. Viewing a
 pass opens an explicit browser-only purchase preview. Confirming deducts its cost

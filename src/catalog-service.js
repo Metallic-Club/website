@@ -2,7 +2,7 @@ import { pageWindow, compactCount } from './pagination.js';
 const idPattern = /^[A-Za-z0-9_-]{1,64}$/;
 const sorts = new Set(['recommended', 'players', 'rating', 'name']);
 export const metadataFor = (game, details = {}) => game.metadata || details[game.id] || { tags: [], mode: 'Multiplayer', mood: 'Immersive' };
-const stableKey = (params, state) => JSON.stringify({ filters: ['q','category','mood','mode','rating','sort','unplayed'].map(key=>[key,(params.get(key)||'').slice(0,160)]),
+const stableKey = (params, state) => JSON.stringify({ filters: ['q','category','mood','mode','tag','rating','sort','unplayed'].map(key=>[key,(params.get(key)||'').slice(0,160)]),
   genres: [...(state.preferredGenres || [])].sort(), favorites: [...(state.favorites || [])].sort(), hidden: [...(state.hiddenGames || [])].sort() });
 export function createLocalCatalog(catalog, details = {}, { cacheSize = 20 } = {}) {
   const byId = new Map(catalog.map(game => [game.id, game]));
@@ -17,10 +17,10 @@ export function createLocalCatalog(catalog, details = {}, { cacheSize = 20 } = {
       const weights = new Map((state.preferredGenres || []).map(genre => [genre, 5]));
       for (const id of favorites) { const game = byId.get(id); if (game) weights.set(game.genre, (weights.get(game.genre) || 0) + 3); }
       const q = (params.get('q') || '').trim().toLowerCase().slice(0, 160), genre = params.get('category') || 'All';
-      const mood = params.get('mood') || 'All', mode = params.get('mode') || 'All', rating = Number(params.get('rating')) || 0;
+      const mood = params.get('mood') || 'All', mode = params.get('mode') || 'All', rating = Number(params.get('rating')) || 0, tag=(params.get('tag')||'').trim().slice(0,30).toLowerCase();
       const sort = sorts.has(params.get('sort')) ? params.get('sort') : 'recommended';
       matches = records.filter(({ game, info, text }) => !hidden.has(game.id) && (!q || text.includes(q)) && (genre === 'All' || game.genre === genre)
-        && (mood === 'All' || info.mood === mood) && (mode === 'All' || info.mode === mode) && game.rating >= rating
+        && (mood === 'All' || info.mood === mood) && (mode === 'All' || info.mode === mode) && (!tag || info.tags.some(value=>value.toLowerCase()===tag)) && game.rating >= rating
         && (params.get('unplayed') !== '1' || !favorites.has(game.id)));
       const score = game => (weights.get(game.genre) || 0) * 10 + game.rating / 10 + (favorites.has(game.id) ? -25 : 2);
       matches.sort((a, b) => (sort === 'players' ? b.players - a.players : sort === 'rating' ? b.game.rating - a.game.rating
@@ -88,7 +88,7 @@ export function createCatalogClient({ local, endpoint = '', fetchImpl = globalTh
   return { remote: Boolean(endpoint), peek: id => known.get(id) || local.get(id),
     async list(params, state, { signal } = {}) {
       if (!endpoint) { signal?.throwIfAborted(); return local.list(params, state); }
-      const query = new URLSearchParams([...params].filter(([key]) => ['q', 'category', 'mood', 'mode', 'rating', 'sort', 'page'].includes(key)).map(([key,value])=>[key,value.slice(0,160)]));
+      const query = new URLSearchParams([...params].filter(([key]) => ['q', 'category', 'mood', 'mode', 'tag', 'rating', 'sort', 'page'].includes(key)).map(([key,value])=>[key,value.slice(0,key==='tag'?30:160)]));
       query.set('limit', '12');
       const page=query.get('page')||'1';query.set('page',/^\d{1,7}$/.test(page)&&Number(page)>0?page:'1');
       return request('/v1/games', query, signal);

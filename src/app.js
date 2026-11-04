@@ -552,6 +552,7 @@ document.addEventListener('click',async e=>{
     case 'copy-doc-code':{const code=document.getElementById(el.dataset.target)?.textContent;if(code)try{await navigator.clipboard.writeText(code);el.textContent='Copied';toast('Code copied.');}catch{toast('Clipboard is unavailable. Select the code to copy it.');}break;}
     case 'retry-catalog':catalog.clear();routeData.key='';render();break;
     case 'remove-filter':setQuery({[el.dataset.key]:null});break;
+    case 'clear-game-filters':setQuery({category:null,mode:null,mood:null,tag:null,rating:null,unplayed:null});break;
     case 'menu':if(innerWidth<=820)setMenu(!document.querySelector('#sidebar').classList.contains('open'));else{sidebarCollapsed=!sidebarCollapsed;try{storage.setItem(sidebarStorageKey,sidebarCollapsed?'1':'0');}catch{}syncSidebarState();}break;
     case 'close-dialog':dialog.close();break;
     case 'discard-settings':settingsDirty=false;dialog.close();navigate(value);break;
@@ -608,11 +609,12 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
   const form=e.target;
-  if(!['docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
+  if(!['docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','game-search-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
   e.preventDefault();if(!form.reportValidity())return;
   const data=new FormData(form);
   if(form.id==='docs-search-form'){navigate('/docs'+(data.get('q').trim()?'?q='+encodeURIComponent(data.get('q').trim()):''));return;}
   if(form.id==='search-form'){closeSuggestions();navigate(routeWithParams('search',new URLSearchParams(),{q:data.get('q').trim()}));}
+  if(form.id==='game-search-form'){setQuery({q:data.get('q').trim()||null,spotlight:null});return;}
   if(form.id==='friend-search')setQuery({person:data.get('person').trim()});
   if(form.id==='auth-form'){if(route==='signup')state.profile.name=data.get('username');form.reset();persist('Welcome to the preview. No live account was created.');navigate('/home');}
   if(form.id==='group-news-form'){groupNews.submit(form);return;}
@@ -629,7 +631,7 @@ document.addEventListener('submit',async e=>{
   }
   if(form.id==='preference-form'){state.preferredGenres=data.getAll('genres').filter(genre=>genres.includes(genre));persist('Discovery updated for you.');dialog.close();render();}
   if(form.id==='discovery-filter-form'){
-    const changes=Object.fromEntries(['q','category','mood','mode','rating'].map(key=>[key,data.get(key)==='All'?null:data.get(key)?.trim()||null]));
+    const changes=Object.fromEntries(['q','category','mood','mode','tag','rating'].map(key=>[key,data.get(key)==='All'?null:data.get(key)?.trim()||null]));
     changes.unplayed=data.has('unplayed')?'1':null;setQuery(changes);
   }
   if(form.id==='marketplace-search')setQuery({q:data.get('q').trim()||null,type:data.get('type')||null,price:data.get('price')||null,slot:null});
