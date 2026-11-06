@@ -38,7 +38,7 @@ export function createStorefront(ctx){
   }
   function row(game){
     const info=metadataFor(game,gameDetails);
-    return `<article class="store-game-row"><a href="#/game/${encodeURIComponent(game.id)}" class="store-row-link"><img src="${esc(game.art)}" alt="" width="240" height="135" loading="lazy" decoding="async"><div><h3>${esc(game.title)}</h3><p>${esc(game.genre)} · ${esc(info.mode)}</p>${tags(game)}</div><div class="store-row-stats">${stats(game)}</div></a><div class="store-row-actions">${ctx.catalog.remote?link('game/'+encodeURIComponent(game.id),'View','button small'):button('play',icon('play',18),'button play-button store-row-play',`data-id="${esc(game.id)}" aria-label="Play ${esc(game.title)}"`)}${ctx.catalog.remote?'':saveButton(game,'store-row-save')}</div></article>`;
+    return `<article class="store-game-row"><a href="#/game/${encodeURIComponent(game.id)}" class="store-row-link"><img src="${esc(game.art)}" alt="" width="240" height="135" loading="lazy" decoding="async"><div><h3>${esc(game.title)}</h3><p>${esc(game.genre)} · ${esc(info.mode)}</p>${tags(game)}</div><div class="store-row-stats">${stats(game)}</div></a><div class="store-row-actions">${ctx.catalog.remote?link('game/'+encodeURIComponent(game.id),'View','button small'):button('play',icon('play',18),'button play-button store-row-play',`data-id="${esc(game.id)}" aria-label="Play ${esc(game.title)}"`)}${ctx.catalog.remote?'':saveButton(game,'store-row-save')}${ctx.contentTrigger('game',game.id,game.title)}</div></article>`;
   }
   function filters(page){
     const params=ctx.params(),active=['category','mood','mode','tag','rating','unplayed'].filter(key=>params.get(key)&&params.get(key)!=='All').length;

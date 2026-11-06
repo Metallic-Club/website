@@ -8,6 +8,8 @@ import {accountBadges,normalizeYoutubeUrl} from './account-roles.js';
 import {profilePermissions,privacyFormFields,privacyFromForm} from './privacy.js';
 import {formatPlaytime,playerGameProgress,playedGames,progressTotals} from './game-progress.js';
 import {createCreatorWorkspace} from './creator-workspace.js';
+import {createContentActions} from './content-actions.js';
+import {listingFor} from './marketplace-checkout.js';
 import {createGroupControls} from './group-controls.js';
 import {assetById,clearFiles} from './creator-data.js';
 import {canGroup} from './group-access.js';
@@ -81,6 +83,8 @@ function pageLinks(page, label='results', key='page') {
 }
 
 const icons = {
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  flag: '<path d="M5 21V4m0 1c5-5 9 4 14 0v10c-5 4-9-5-14 0"/>',
   cart: '<path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/>',
   gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13m0-13H8a2 2 0 1 1 2-2zm0 0h4a2 2 0 1 0-2-2z"/>',
   trading: '<path d="M3 8h17m-4-4 4 4-4 4M21 16H4m4-4-4 4 4 4"/>',
@@ -138,6 +142,46 @@ function toast(message) { const el = document.querySelector('#toast'); el.textCo
 function modal(title, body) { dialog.innerHTML = `<div class="dialog-head"><h2 id="dialog-title">${title}</h2>${button('close-dialog', icon('close'), 'plain-icon', 'aria-label="Close dialog"')}</div>${body}`; if (!dialog.open) dialog.showModal(); }
 const pageHead = (title, subtitle, action = '') => `<div class="page-head"><div><h1>${title}</h1><p class="welcome">${subtitle}</p></div>${action}</div>`;
 const empty = (title, text, action = '') => `<div class="empty-state">${icon('explore', 36)}<h3>${title}</h3><p>${text}</p>${action}</div>`;
+function contentTarget(kind, id) {
+  const actions = [];
+  const act = (action, label, glyph, key = 'id') => actions.push({action, label, glyph, extra: `data-${key}="${esc(id)}"`});
+  const go = (href, label, glyph) => actions.push({href, label, glyph});
+  if (kind === 'game') {
+    const game = catalog.peek(id);
+    if (!game) return;
+    if (games.some(sample => sample.id === id)) act('favorite', state.favorites.includes(id) ? 'Remove from favorites' : 'Add to favorites', 'heart');
+    return {name: game.title, path: 'game/' + encodeURIComponent(id), actions, report: true};
+  }
+  if (kind === 'profile') {
+    const own = id === state.profile.name;
+    if (!own && !state.friends.includes(id) && !community.some(person => person.name === id)) return;
+    if (own) go('settings?section=account', 'Edit profile', 'settings');
+    else if (state.friends.includes(id)) act('remove-friend', 'Remove friend', 'friends', 'name');
+    else if (state.requests.includes(id)) {
+      act('accept-friend', 'Accept friend request', 'check', 'name');
+      act('decline-friend', 'Decline friend request', 'close', 'name');
+    } else if (state.outgoing.includes(id)) act('cancel-friend', 'Cancel friend request', 'close', 'name');
+    else act('add-friend', 'Add friend', 'friends', 'name');
+    return {name: id, path: 'profile?user=' + encodeURIComponent(id), actions, report: !own};
+  }
+  if (kind === 'group') {
+    const group = findGroup(state, id);
+    if (!group) return;
+    if (groupControls.editable(group)) go('groups/' + id + '/manage', 'Manage group', 'settings');
+    else if (state.groupMemberships.includes(id)) act('leave-group', 'Leave group', 'groups');
+    else if (state.groupRequests.includes(id)) act('cancel-group-request', 'Cancel join request', 'close');
+    else act('join-group', group.joinPolicy === 'approval' ? 'Request to join' : 'Join group', 'groups');
+    act('group-news-toggle', state.groupNewsSubscriptions[id] ? 'Turn off news notifications' : 'Turn on news notifications', 'bell');
+    return {name: group.name, path: group.mine ? null : 'groups/' + id, actions, report: !group.mine && group.owner !== state.profile.name};
+  }
+  if (kind === 'item') {
+    const asset = assetById(state, id);
+    if (!asset || asset.local) return;
+    if (listingFor(id) && !state.inventory.includes(id)) act('market-wish', state.savedAssets.includes(id) ? 'Remove from wishlist' : 'Add to wishlist', 'heart');
+    return {name: asset.name, path: 'assets/' + id, actions, report: true};
+  }
+}
+const contentActions = createContentActions({button, icon, dialog, modal, toast, state: () => state, target: contentTarget, save: () => saveState(storage, state)});
 function card(game) {
   return `<article class="game-card"><a class="game-card-link" href="#/game/${encodeURIComponent(game.id)}" aria-label="${esc(game.title)}${Number.isFinite(game.playtimeMinutes)?', '+(game.playtimeMinutes?formatPlaytime(game.playtimeMinutes)+' played':'not played yet'):''}">
     <span class="game-art"><img class="poster-art" src="${esc(game.art)}" alt="" loading="lazy" decoding="async" width="240" height="240">
@@ -145,7 +189,7 @@ function card(game) {
     </span><span class="game-title">${esc(game.title)}</span>
     <span class="game-stats"><span class="stat-rating" aria-label="${game.rating} percent liked">${icon('thumbs',13)} ${game.rating}%</span><span aria-label="${esc(game.playing)} playing">${icon('profile',13)} ${esc(game.playing)}</span></span>
     ${Number.isFinite(game.playtimeMinutes)?`<span class="game-playtime">${icon('clock',12)} ${game.playtimeMinutes?formatPlaytime(game.playtimeMinutes)+' played':'Not played yet'}</span>`:''}
-  </a><div class="game-quick-play">${button('play','<svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4 18 12 6 20Z"/></svg>','game-play',`data-id="${esc(game.id)}" data-title="${esc(game.title)}" aria-label="Play ${esc(game.title)}"`)}</div></article>`;
+  </a><div class="game-quick-play">${button('play','<svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4 18 12 6 20Z"/></svg>','game-play',`data-id="${esc(game.id)}" data-title="${esc(game.title)}" aria-label="Play ${esc(game.title)}"`)}</div>${contentActions.trigger('game',game.id,game.title,'content-actions-overlay')}</article>`;
 }
 function shelf(title, subtitle, items, id, destination = 'explore') {
   if(!items.length)return '';
@@ -193,7 +237,7 @@ function gamePage() {
   const progress=playerGameProgress(game,progressName,state.profile.name);
   const gameSectionLink=(tab,label)=>{const query=new URLSearchParams();if(tab)query.set('tab',tab);if(progressName!==state.profile.name)query.set('user',progressName);else if(params.get('viewAs'))query.set('viewAs',params.get('viewAs'));const selected=(params.get('tab')||'')===tab||!tab&&!['servers','achievements','passes'].includes(params.get('tab'));return `<a href="#/game/${game.id}${query.size?'?'+query:''}" class="${selected?'selected':''}" ${selected?'aria-current="page"':''}>${label}</a>`;};
   const descriptions={Puzzle:'Solve puzzles, test different ideas, and work with friends on the next challenge.',Survival:'Gather what you need, explore your surroundings, and work together to survive.',Strategy:'Plan your next move, build a strategy, and test it against a new challenge.',Shooter:'Choose your loadout, work with your team, and get ready for the next round.',Adventure:'Explore the unknown, discover hidden corners, and find your own path through a world full of possibility.',Action:'Bring your best moves, take on a new challenge, and team up with friends for your next adventure.',Obby:'Jump, dodge, and find your rhythm. Every obstacle is another chance to beat your personal best.',Simulation:'Start with a little imagination and make a world your own. Build, discover, and see where your curiosity takes you.',Roleplay:'Meet up with friends, find your favorite corner of the city, and create a story that belongs to you.',Racing:'Find your line and chase the perfect lap. A new personal best is waiting around the next corner.'};
-  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><h1>${esc(game.title)}</h1><p class="game-creator">By ${creatorLink(game.id)}</p><p>${descriptions[game.genre]||descriptions[sampleGenreFamily(game.genre)]||descriptions.Adventure}</p><div class="game-tag-row">${info.tags.map(tag=>`<span>${tag}</span>`).join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${game.playing}</strong><span>Active players</span></div><div><strong>${servers.length}</strong><span>Sample servers</span></div></div>${gameProgressSummary(game,progressName)}<div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}${button('share',icon('share',18),'button','aria-label="Share game"')}</div><p class="fine-print">Game activity, playtime, and achievements are sample data. Live gameplay is not connected.</p></div></section>
+  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><div class="content-heading-actions"><h1>${esc(game.title)}</h1>${contentActions.trigger('game',game.id,game.title)}</div><p class="game-creator">By ${creatorLink(game.id)}</p><p>${descriptions[game.genre]||descriptions[sampleGenreFamily(game.genre)]||descriptions.Adventure}</p><div class="game-tag-row">${info.tags.map(tag=>`<span>${tag}</span>`).join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${game.playing}</strong><span>Active players</span></div><div><strong>${servers.length}</strong><span>Sample servers</span></div></div>${gameProgressSummary(game,progressName)}<div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}</div><p class="fine-print">Game activity, playtime, and achievements are sample data. Live gameplay is not connected.</p></div></section>
     ${gameFriends(game.id)}<nav class="game-page-tabs" aria-label="Game sections">${gameSectionLink('','Overview')}${gameSectionLink('achievements','Achievements ('+progress.total+')')}${gameSectionLink('passes','Passes ('+passesFor(game).length+')')}${gameSectionLink('servers','Servers ('+servers.length+')')}</nav>
     ${passTab?gamePassUI.page(game):achievementTab?gameAchievementDetails(game,progressName):serverTab?`
     <section class="reserved-servers-section"><div class="section-top"><div><h2>Your servers <span class="muted">(${owned.length})</span></h2><p class="section-sub">Your own space, with public or invite-only access.</p></div>${button('create-server',icon('create',16)+' Create private server','button',`data-id="${game.id}"`)}</div><div class="private-server-price"><span>${icon('alloy',18)} <strong>${SERVER_PRICE} Alloy</strong><small>One-time preview creation cost</small></span><span>Preview balance: <strong>${state.previewAlloy.toLocaleString()} Alloy</strong></span></div>${owned.length?`<div class="server-list">${owned.map(serverCard).join('')}</div>`:'<div class="reserved-empty">'+icon('friends',23)+'<p>Make room for your friends. Create a server and decide who can join.</p></div>'}</section>
@@ -203,7 +247,7 @@ function gamePage() {
 }
 function remoteGamePage(game) {
   const info=metadataFor(game);
-  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${esc(game.art)}" alt="${esc(game.title)} artwork" width="960" height="540" fetchpriority="high"></div><div><span class="eyebrow">${esc(game.genre)} · ${esc(info.mode)}</span><h1>${esc(game.title)}</h1><div class="game-tag-row">${info.tags.map(tag=>'<span>'+esc(tag)+'</span>').join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${esc(game.playing)}</strong><span>Playing</span></div></div>${link('download','View launcher availability','button primary')}</div></section><nav class="game-page-tabs" aria-label="Game sections">${link('game/'+encodeURIComponent(game.id),'Overview',params.get('tab')!=='passes'?'selected':'')}${link('game/'+encodeURIComponent(game.id)+'?tab=passes','Passes',params.get('tab')==='passes'?'selected':'')}</nav>${params.get('tab')==='passes'?'<section class="game-passes"><h2>Passes</h2><p class="muted">Passes are not connected to the live catalog yet.</p></section>':'<section class="game-about"><h2>About this game</h2><p>'+esc(game.title)+' · '+esc(info.mode)+' · '+esc(info.mood)+'</p><p class="fine-print">Game information is supplied by the catalog. Live server browsing and launcher joining are not connected.</p></section>'}`;
+  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${esc(game.art)}" alt="${esc(game.title)} artwork" width="960" height="540" fetchpriority="high"></div><div><span class="eyebrow">${esc(game.genre)} · ${esc(info.mode)}</span><div class="content-heading-actions"><h1>${esc(game.title)}</h1>${contentActions.trigger('game',game.id,game.title)}</div><div class="game-tag-row">${info.tags.map(tag=>'<span>'+esc(tag)+'</span>').join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${esc(game.playing)}</strong><span>Playing</span></div></div>${link('download','View launcher availability','button primary')}</div></section><nav class="game-page-tabs" aria-label="Game sections">${link('game/'+encodeURIComponent(game.id),'Overview',params.get('tab')!=='passes'?'selected':'')}${link('game/'+encodeURIComponent(game.id)+'?tab=passes','Passes',params.get('tab')==='passes'?'selected':'')}</nav>${params.get('tab')==='passes'?'<section class="game-passes"><h2>Passes</h2><p class="muted">Passes are not connected to the live catalog yet.</p></section>':'<section class="game-about"><h2>About this game</h2><p>'+esc(game.title)+' · '+esc(info.mode)+' · '+esc(info.mood)+'</p><p class="fine-print">Game information is supplied by the catalog. Live server browsing and launcher joining are not connected.</p></section>'}`;
 }
 function auth() {
   const signup=route==='signup', granted=signup&&inviteGate.hasAccess();
@@ -228,7 +272,7 @@ function profile() {
   const name=own?state.profile.name:requested, friends=own?state.friends:[...new Set([...(connections[name]||[]),...(state.friends.includes(name)?[state.profile.name]:[])])], mutual=own?[]:mutualFriends(state,name);
   const viewAs=own&&['friend','others'].includes(params.get('viewAs'))?params.get('viewAs'):'',access=profilePermissions(state,name,viewAs);
   const preview=own?`<div class="profile-preview-bar"><div><label for="profile-audience">View profile as</label><select id="profile-audience"><option value="" ${!viewAs?'selected':''}>Myself</option><option value="friend" ${viewAs==='friend'?'selected':''}>A friend</option><option value="others" ${viewAs==='others'?'selected':''}>Other players</option></select></div><p>${viewAs?'Previewing your saved privacy settings.':'Only you can see this control.'}</p></div>`:'';
-  if(!access.profile)return preview+pageHead(esc(name),'This profile is private.')+link('settings?section=privacy','Privacy settings','button');
+  if(!access.profile)return preview+pageHead(esc(name),'This profile is private.')+(own?link('settings?section=privacy','Privacy settings','button'):contentActions.trigger('profile',name,name));
   const favorites=games.filter(game=>(own?state.favorites:(sampleFavorites[name]||[])).includes(game.id));
   const publishedCreations=games.filter(game=>{const owner=ownerForGame(game.id);return owner.type==='user'&&owner.id===name;});
   const favoritePage=pageWindow(favorites,params.get('favoritePage'));
@@ -237,7 +281,7 @@ function profile() {
   const friendAction=state.friends.includes(name)?button('remove-friend','Friends '+icon('check',16),'button',`data-name="${esc(name)}"`):state.requests.includes(name)?button('accept-friend','Accept request','button primary',`data-name="${esc(name)}"`):state.outgoing.includes(name)?button('cancel-friend','Cancel request','button',`data-name="${esc(name)}"`):button('add-friend','Add friend','button primary',`data-name="${esc(name)}"`);
   return `${preview}<section class="profile-cover"><div class="cover-mark">M</div><span class="eyebrow">${own?'YOUR CORNER OF METALLIC':'PLAYER PROFILE'}</span></section>
     <section class="profile-header">${own?avatar(0,'profile-avatar'):referenceAvatar(person.avatar,'profile-avatar')}<div><h1>${accountName(name)}</h1><p>@${esc(name)} <span class="profile-online">${activityText(name)}</span></p>
-    ${!own&&access.friends?`<a class="mutual-summary" href="#/profile?user=${encodeURIComponent(name)}&friends=mutual"><span>${mutual.length} mutual friend${mutual.length===1?'':'s'}</span></a>`:''}</div><div class="profile-header-action">${own?link('settings?section=account','Edit profile','button'):friendAction}${profileJoin}</div></section>
+    ${!own&&access.friends?`<a class="mutual-summary" href="#/profile?user=${encodeURIComponent(name)}&friends=mutual"><span>${mutual.length} mutual friend${mutual.length===1?'':'s'}</span></a>`:''}</div><div class="profile-header-action content-page-actions">${own?link('settings?section=account','Edit profile','button'):friendAction}${profileJoin}${contentActions.trigger('profile',name,name)}</div></section>
     <div class="account-profile-layout"><div class="profile-main-column">
     ${access.friends?profileFriends(friends,own,mutual,params.get('friends')==='mutual',!!viewAs):privateProfileSection('Friends list')}
     ${access.favorites?`<section class="profile-section"><div class="section-top"><h2>Favorite games <span class="muted">(${favorites.length})</span></h2>${own?link('explore','Find more →','view-all'):''}</div>${favorites.length?`<div class="game-grid profile-games">${favoritePage.items.map(card).join('')}</div>`:'<div class="inline-empty">No favorite games yet.'+(own?' '+link('explore','Find your next favorite →','text-link'):'')+'</div>'}${pageLinks(favoritePage,'favorite games','favoritePage')}</section>`:privateProfileSection('Favorite games')}
@@ -372,13 +416,13 @@ function groupsPage() {
   const mine=params.get('tab')==='mine', query=(params.get('q')||'').trim().toLowerCase(), category=params.get('category')||'All';
   const groups=getGroups(state).filter(group=>(!mine||group.mine||state.groupMemberships.includes(group.id)||state.groupRequests.includes(group.id))&&(!query||`${group.name} ${group.description}`.toLowerCase().includes(query))&&(category==='All'||group.category===category));
   const groupPage=pageWindow(groups,params.get('page'));
-  return `${pageHead('Groups','Find your people. Build something together.',button('new-group',icon('create',17)+' Create group','button primary'))}<section class="groups-intro"><div><span class="eyebrow">A SHARED INTEREST. A SHARED WORLD.</span><h2>Good ideas grow together.</h2><p>Meet people who love what you love—or start a group and create your next game as a team.</p></div><div class="groups-intro-emblems">${getGroups(state).slice(0,3).map(group=>groupEmblem(group)).join('')}</div></section><nav class="group-browse-tabs" aria-label="Group browsing">${link('groups','Discover groups',!mine?'selected':'')}${link('groups?tab=mine','My groups',mine?'selected':'')}</nav><form id="group-search" class="group-search-form"><div class="group-search-input">${icon('search',18)}<input type="search" name="q" aria-label="Search groups" placeholder="Find a group" value="${esc(params.get('q')||'')}"></div><label>Interest<select name="category"><option value="All">All interests</option>${groupCategories.map(value=>`<option ${category===value?'selected':''}>${value}</option>`).join('')}</select></label><button type="submit" class="button">Search</button></form><div class="section-top"><h2>${mine?'Your communities':'Find a place to belong'}</h2><span class="result-count" role="status">${groups.length} group${groups.length===1?'':'s'}</span></div><div class="group-grid">${groupPage.items.map(group=>`<article class="group-card"><a href="#/groups/${group.id}" class="group-card-link">${groupEmblem(group)}<span class="group-category">${group.category}</span><h3>${esc(group.name)}</h3><p>${esc(group.description)}</p></a><div class="group-card-footer"><span>${groupMembers(group,state).length} member${groupMembers(group,state).length===1?'':'s'}</span>${link('groups/'+group.id,'View group →','text-link')}</div>${group.mine?'<span class="group-owned">Owner</span>':state.groupMemberships.includes(group.id)?'<span class="group-owned">Joined</span>':state.groupRequests.includes(group.id)?'<span class="group-owned">Request pending</span>':''}</article>`).join('')}</div>${pageLinks(groupPage,'groups')}${!groups.length?empty('Your people are out there.','Try another search, discover a group, or start your own.',button('new-group','Create a group','button primary')):''}<p class="fine-print">Sample communities and local groups. Membership changes stay in this browser.</p>`;
+  return `${pageHead('Groups','Find your people. Build something together.',button('new-group',icon('create',17)+' Create group','button primary'))}<section class="groups-intro"><div><span class="eyebrow">A SHARED INTEREST. A SHARED WORLD.</span><h2>Good ideas grow together.</h2><p>Meet people who love what you love—or start a group and create your next game as a team.</p></div><div class="groups-intro-emblems">${getGroups(state).slice(0,3).map(group=>groupEmblem(group)).join('')}</div></section><nav class="group-browse-tabs" aria-label="Group browsing">${link('groups','Discover groups',!mine?'selected':'')}${link('groups?tab=mine','My groups',mine?'selected':'')}</nav><form id="group-search" class="group-search-form"><div class="group-search-input">${icon('search',18)}<input type="search" name="q" aria-label="Search groups" placeholder="Find a group" value="${esc(params.get('q')||'')}"></div><label>Interest<select name="category"><option value="All">All interests</option>${groupCategories.map(value=>`<option ${category===value?'selected':''}>${value}</option>`).join('')}</select></label><button type="submit" class="button">Search</button></form><div class="section-top"><h2>${mine?'Your communities':'Find a place to belong'}</h2><span class="result-count" role="status">${groups.length} group${groups.length===1?'':'s'}</span></div><div class="group-grid">${groupPage.items.map(group=>`<article class="group-card"><a href="#/groups/${group.id}" class="group-card-link">${groupEmblem(group)}<span class="group-category">${group.category}</span><h3>${esc(group.name)}</h3><p>${esc(group.description)}</p></a><div class="group-card-footer"><span>${groupMembers(group,state).length} member${groupMembers(group,state).length===1?'':'s'}</span>${link('groups/'+group.id,'View group →','text-link')}</div>${group.mine?'<span class="group-owned">Owner</span>':state.groupMemberships.includes(group.id)?'<span class="group-owned">Joined</span>':state.groupRequests.includes(group.id)?'<span class="group-owned">Request pending</span>':''}${contentActions.trigger('group',group.id,group.name,'content-actions-overlay')}</article>`).join('')}</div>${pageLinks(groupPage,'groups')}${!groups.length?empty('Your people are out there.','Try another search, discover a group, or start your own.',button('new-group','Create a group','button primary')):''}<p class="fine-print">Sample communities and local groups. Membership changes stay in this browser.</p>`;
 }
 function groupPage() {
   const group=findGroup(state,route.split('/')[1]);if(!group)return notFound();
   const members=groupMembers(group,state), tab=['about','games','members','news'].includes(params.get('tab'))?params.get('tab'):'about';
   const published=games.filter(game=>group.games.includes(game.id));
-  return `${link('groups','← All groups','text-link')}<section class="group-cover group-color-${group.color}"><span>GROUP · ${group.category.toUpperCase()}</span><div>${esc(group.emblem)}</div></section><header class="group-profile-header">${groupEmblem(group,'large')}<div><h1>${esc(group.name)}</h1><p>By ${link('profile?user='+encodeURIComponent(group.owner),esc(group.owner),'text-link')} <span>· ${members.length} members</span></p></div><div>${groupAction(group)}</div></header><nav class="group-detail-tabs" aria-label="Group sections">${[['about','About'],['games','Games ('+(published.length)+')'],['news','News'],['members','Members ('+members.length+')']].map(([value,label])=>link('groups/'+group.id+(value==='about'?'':'?tab='+value),label,tab===value?'selected':'')).join('')}</nav>
+  return `${link('groups','← All groups','text-link')}<section class="group-cover group-color-${group.color}"><span>GROUP · ${group.category.toUpperCase()}</span><div>${esc(group.emblem)}</div></section><header class="group-profile-header">${groupEmblem(group,'large')}<div><h1>${esc(group.name)}</h1><p>By ${link('profile?user='+encodeURIComponent(group.owner),esc(group.owner),'text-link')} <span>· ${members.length} members</span></p></div><div class="content-page-actions">${groupAction(group)}${contentActions.trigger('group',group.id,group.name)}</div></header><nav class="group-detail-tabs" aria-label="Group sections">${[['about','About'],['games','Games ('+(published.length)+')'],['news','News'],['members','Members ('+members.length+')']].map(([value,label])=>link('groups/'+group.id+(value==='about'?'':'?tab='+value),label,tab===value?'selected':'')).join('')}</nav>
     ${tab==='about'?`<div class="group-about-layout"><section><div class="group-announcement"><span class="eyebrow">GROUP SHOUT</span><p>${esc(group.shout)}</p><span>From ${esc(group.shoutBy||group.owner)}</span></div><section class="panel group-description"><h2>About this group</h2><p>${esc(group.description)||'Tell your members what brings this group together.'}</p><div class="group-facts"><div><span>Interest</span><strong>${group.category}</strong></div><div><span>Membership</span><strong>${group.joinPolicy==='approval'?'Approval required':'Open to everyone'}</strong></div></div></section></section><aside class="panel group-build-together">${icon('create',30)}<h2>Create as a group</h2><p>Give your next game a home, with your group as its creator.</p>${canGroup(group,state.profile.name,'createGames')?link('create?tab=templates&group='+group.id,'Choose a game template','button primary full'):'<p class="fine-print">Your role needs permission to create group games.</p>'}</aside></div>`:''}
     ${tab==='games'?`<div class="section-top"><div><h2>Group games</h2><p class="section-sub">Worlds made by ${esc(group.name)}.</p></div>${canGroup(group,state.profile.name,'createGames')?link('create?tab=templates&group='+group.id,'Choose a template','button small'):''}</div>${published.length?`<div class="game-grid">${published.map(card).join('')}</div>`:empty('No published games yet.','Start with a local template and build your game in Studio.')}`:''}
     ${tab==='news'?groupNews.page(group):''}
@@ -404,7 +448,7 @@ function restoreFocus(identity) {
   if(target&&!target.disabled)target.focus({preventScroll:true});
   else document.querySelector('#main')?.focus({preventScroll:true});
 }
-const workspaceContext={state:()=>state,params:()=>params,route:()=>route,icon,link,button,pageHead,pageLinks,empty,notFound,modal,dialog,navigate,render,persist,toast,groupEmblem,accountName,save:()=>saveState(storage,state)};
+const workspaceContext={state:()=>state,params:()=>params,route:()=>route,icon,link,button,pageHead,pageLinks,empty,notFound,modal,dialog,navigate,render,persist,toast,groupEmblem,accountName,contentTrigger:contentActions.trigger,save:()=>saveState(storage,state)};
 const storefront=createStorefront({...workspaceContext,games,catalog,routeData:()=>routeData,card,friendStrip,catalogLoading,catalogError});
 const gamePassUI=createGamePassUI(workspaceContext);
 const creatorWorkspace=createCreatorWorkspace(workspaceContext);
@@ -412,6 +456,7 @@ const groupControls=createGroupControls(workspaceContext);
 const groupNews=createGroupNewsUI(workspaceContext);
 const accountLinks=createAccountLinksUI({...workspaceContext,isSettingsDirty:()=>settingsDirty},document.querySelector('meta[name="metallic-connections-api"]')?.content||'');
 function render(preserveFocus=true) {
+  contentActions.close(true);
   closeFriendPreview();
   const focus=preserveFocus?focusIdentity():null;
   const editing=preserveFocus&&document.activeElement?.matches('#site-search')?{value:document.activeElement.value}:null;
@@ -574,6 +619,7 @@ document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-action]');if(!el)return;
   if(requiresTester(readRoute(location.hash).route)&&!betaSession.hasAccess()){render(false);return;}
   const {action,value,id,name}=el.dataset;
+  if (['content-actions','content-share','content-report'].includes(action)) {await contentActions.handleAction(action,el);return;}
   if(gamePassUI.handleAction(action,el))return;
   if(await creatorWorkspace.handleAction(action,el))return;
   if(groupControls.handleAction(action,el))return;
@@ -609,7 +655,6 @@ document.addEventListener('click',async e=>{
     case 'clear-search':navigate('/explore');break;
     case 'favorite':if(games.some(g=>g.id===id)){state.favorites=state.favorites.includes(id)?state.favorites.filter(x=>x!==id):[...state.favorites,id];persist(state.favorites.includes(id)?'Added to your favorites.':'Removed from favorites.');render();}break;
     case 'play':modal('Your next adventure is on its way',`<p class="muted">${esc(games.find(g=>g.id===id)?.title||el.dataset.title||'This game')} will open in the Metallic launcher when live gameplay is available.</p><p>This is a preview game. No game has been launched.</p>${link('download',icon('download',18)+' View launcher availability','button primary full')}`);break;
-    case 'share':try{await navigator.clipboard.writeText(location.href);toast('Game link copied.');}catch{modal('Share this game',`<label for="share-url">Game link</label><input id="share-url" class="share-url" readonly value="${esc(location.href)}"><p class="fine-print">Copy this link. Viewers still need access to this private preview.</p>`);document.querySelector('#share-url').select();}break;
     case 'password':{const input=document.querySelector('#password');const show=input.type==='password';input.type=show?'text':'password';el.textContent=show?'Hide':'Show';el.setAttribute('aria-label',show?'Hide password':'Show password');el.setAttribute('aria-pressed',String(show));break;}
     case 'recovery':modal('Account recovery',`<p class="muted">Account recovery will be available through the beta account service. Contact the Metallic team if you need help with your tester account.</p>${link('login','Back to log in','button primary full')}`);break;
     case 'platform':platform=value;render();break;
@@ -648,8 +693,9 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
   const form=e.target;
-  if(!['docs-search-form','invite-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','game-search-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
+  if(!['content-report-form','docs-search-form','invite-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','game-search-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
   e.preventDefault();if(!form.reportValidity())return;
+  if(contentActions.submit(form))return;
   const data=new FormData(form);
   if(form.id==='docs-search-form'){navigate('/docs'+(data.get('q').trim()?'?q='+encodeURIComponent(data.get('q').trim()):''));return;}
   if(form.id==='invite-form'){

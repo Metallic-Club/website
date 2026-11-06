@@ -1,0 +1,71 @@
+.content-actions-trigger {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.content-actions-trigger:hover, .content-actions-trigger[aria-expanded="true"] {
+  background: var(--surface-hover);
+}
+.asset-card, .game-card, .group-card { position: relative; }
+.store-library-item .store-save { left: 9px; right: auto; }
+.content-actions-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+}
+.group-card:has(.content-actions-overlay) .group-owned { right: 52px; }
+@media (hover: hover) and (pointer: fine) {
+  .game-card .content-actions-overlay, .asset-card .content-actions-overlay { opacity: 0; }
+  .game-card:hover .content-actions-overlay, .game-card:focus-within .content-actions-overlay,
+  .asset-card:hover .content-actions-overlay, .asset-card:focus-within .content-actions-overlay,
+  .content-actions-overlay[aria-expanded="true"] { opacity: 1; }
+}
+.content-heading-actions, .content-page-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.content-page-actions { align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.content-heading-actions h1 { min-width: 0; overflow-wrap: anywhere; }
+#content-actions {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 5px;
+  width: min(225px, calc(100vw - 12px));
+  max-height: calc(100dvh - 12px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px #0005;
+  background: var(--surface);
+  color: var(--text);
+}
+#content-actions :is(a, button) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 5px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+#content-actions :is(a, button:not(:disabled)):is(:hover, :focus-visible) { background: var(--surface-hover); }
+#content-actions button:disabled { opacity: .58; cursor: default; }
+#content-actions .content-report { border-top: 1px solid var(--border); border-radius: 0 0 5px 5px; }
