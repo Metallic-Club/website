@@ -264,7 +264,30 @@ function trading() {
 }
 function create(){return creatorWorkspace.createPage();}
 const packs = [{amount:400,price:'$4.99'},{amount:800,price:'$9.99'},{amount:1700,price:'$19.99'},{amount:4500,price:'$49.99'}];
-function alloy() { return `${pageHead('Buy Alloy','More ways to make Metallic your own.')}<section class="alloy-intro"><div class="alloy-coin">${icon('alloy',72)}</div><div><span class="eyebrow">MAKE MORE OF METALLIC</span><h2>Put your own spin on play.</h2><p>Personalize your avatar and discover more ways to express yourself.</p></div><div class="balance"><span>Preview balance</span><strong>${icon('alloy',24)} ${state.previewAlloy.toLocaleString()}</strong></div></section><div class="notice"><span>${icon('alloy')}<span><strong>Store preview</strong><small>Illustrative packs and prices. Purchases are not available and no payment is collected.</small></span></span></div><div class="alloy-packs">${packs.map((p,i)=>`<article class="alloy-pack ${i===2?'featured':''}">${i===2?'<span class="pack-ribbon">A little extra possibility</span>':''}${icon('alloy',44)}<h2>${p.amount.toLocaleString()}</h2><p>Alloy</p><strong class="pack-price">${p.price} <small>USD</small></strong>${button('review-pack','Preview pack','button '+(i===2?'primary':''),`data-index="${i}"`)}</article>`).join('')}</div><section class="faq"><h2>Good to know</h2><details><summary>What is Alloy?</summary><p>Alloy is the planned virtual currency for Metallic, designed for avatar items and in-game content.</p></details><details><summary>Can I buy Alloy now?</summary><p>Not yet. This is a store preview. Payment processing, final pricing, and purchase terms will be added before the store launches.</p></details><details><summary>Will my preview balance be saved?</summary><p>The displayed ${state.previewAlloy.toLocaleString()} Alloy is sample content. It is not a real wallet or a transferable balance.</p></details></section>`; }
+function alloy() {
+  const balance = state.previewAlloy.toLocaleString();
+  return `${pageHead('Buy Alloy','Compare Alloy packs and see your preview balance.')}
+    <section class="alloy-intro" aria-labelledby="alloy-intro-title">
+      <div class="alloy-coin">${icon('alloy',52)}</div>
+      <div class="alloy-intro-copy"><h2 id="alloy-intro-title">What you can do with Alloy</h2><p>Use Alloy for game passes, private servers, and assets in the Creator Marketplace.</p></div>
+      <div class="alloy-balance"><span>Preview balance</span><strong>${icon('alloy',20)} ${balance} Alloy</strong></div>
+    </section>
+    <div class="notice"><span>${icon('alloy')}<span><strong>Store preview</strong><small>These are example prices. Checkout is coming soon.</small></span></span></div>
+    <div class="alloy-packs">${packs.map((pack, index) => {
+      const amount = pack.amount.toLocaleString();
+      return `<article class="alloy-pack ${index===2?'featured':''}">
+        ${index===2?'<span class="pack-ribbon">Featured pack</span>':''}
+        ${icon('alloy',40)}<h2>${amount} Alloy</h2>
+        <strong class="pack-price">${pack.price} <small>USD</small></strong>
+        ${button('review-pack','Preview pack',index===2?'button primary':'button',`data-index="${index}" aria-label="Preview ${amount} Alloy pack"`)}
+      </article>`;
+    }).join('')}</div>
+    <section class="faq"><h2>About Alloy</h2>
+      <details><summary>What is Alloy?</summary><p>Alloy is Metallic’s virtual currency. In this preview you can spend sample Alloy on game passes, private servers, and Creator Marketplace assets.</p></details>
+      <details><summary>When can I buy Alloy?</summary><p>Purchases will open when checkout launches. The prices shown here are examples.</p></details>
+      <details><summary>Where is my preview balance saved?</summary><p>Your preview balance is saved in this browser.</p></details>
+    </section>`;
+}
 function profile() {
   const requested=params.get('user'), own=!requested||requested===state.profile.name;
   const person=own?null:community.find(p=>p.name===requested)||(state.friends.includes(requested)?personInfo(requested):null);
@@ -677,7 +700,7 @@ document.addEventListener('click',async e=>{
       const group=findGroup(state,id), actionName=action==='join-group'?'join':action==='leave-group'?'leave':'cancel';
       if(updateGroupMembership(state,group,actionName)){persist(actionName==='join'?(group.joinPolicy==='approval'?'Preview join request saved.':'You joined the group preview.'):actionName==='leave'?'You left the group preview.':'Preview join request canceled.');render();}break;
     }
-    case 'review-pack':{const pack=packs[Number(el.dataset.index)];if(!pack)break;modal('Your Alloy pack',`<div class="checkout-preview">${icon('alloy',48)}<h3>${pack.amount.toLocaleString()} Alloy</h3><strong>${pack.price} USD</strong></div><p class="muted">Illustrative pricing. Checkout is not available. No money will be charged and your sample balance stays the same.</p><button class="button primary full" disabled>Checkout coming soon</button>`);break;}
+    case 'review-pack':{const pack=packs[Number(el.dataset.index)];if(!pack)break;modal('Alloy pack preview',`<div class="checkout-preview">${icon('alloy',48)}<h3>${pack.amount.toLocaleString()} Alloy</h3><strong>${pack.price} USD</strong></div><p class="muted">This is an example price. Checkout is coming soon.</p>${button('close-dialog','Done','button full')}`);break;}
     case 'friend-tab':setQuery({tab:value==='all'?null:value,person:null});break;
     case 'clear-people':setQuery({person:null});break;
     case 'find-people':navigate('/friends?tab=find');break;
