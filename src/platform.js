@@ -110,10 +110,12 @@ export const marketplaceAssets = [
   { id: 'silver-chain', name: 'Silver Chain', type: 'cosmetics', subcategory: 'Neck', price: 35, creator: 'NeonFox', description: 'A subtle finishing touch in silver.', color: 'purple' },
 ];
 export function assetMatches(asset, params) {
-  const query = (params.get('q') || '').toLowerCase().trim();
-  return (!params.get('type') || asset.type === params.get('type'))
+  const words = (params.get('q') || '').slice(0, 160).toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const text = [asset.name, asset.subcategory, asset.creator, asset.description, creatorTypes[asset.type], asset.kind, ...(asset.tags || [])].join(' ').toLowerCase();
+  return (!params.get('kind') || asset.kind === params.get('kind'))
+    && (!params.get('type') || asset.type === params.get('type'))
     && (!params.get('slot') || asset.subcategory === params.get('slot'))
     && (params.get('price') !== 'free' || asset.price === 0)
     && (params.get('price') !== 'paid' || asset.price > 0)
-    && (!query || `${asset.name} ${asset.subcategory} ${asset.creator || ''}`.toLowerCase().includes(query));
+    && words.every(word => text.includes(word));
 }

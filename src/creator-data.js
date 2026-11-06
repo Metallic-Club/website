@@ -7,6 +7,8 @@ export const defaultTemplates = [
   {id:'template-social', name:'Social hangout', art:'art/game-6.svg', description:'A shared space with seating and places to meet.', scene:'social'},
 ].map(item=>({...item,type:'templates',subcategory:'Starter template',creator:'Metallic',tags:['Starter',item.scene],price:0,defaultTemplate:true}));
 export const extraAssets = [
+  {id:'player-controller',name:'Third-Person Player Controller',type:'plugins',kind:'systems',subcategory:'Player controllers',description:'A starter movement system with walking, sprinting, jumping, and a follow camera.',tags:['Character','Movement','Camera','Luau'],creator:'CloudBuilder',price:260,color:'blue'},
+  {id:'checkpoint-system',name:'Checkpoint System',type:'plugins',kind:'systems',subcategory:'Progression',description:'Place checkpoints and respawn players at the last checkpoint they reached.',tags:['Obby','Respawn','Progression','Luau'],creator:'PixelNova',price:0,color:'green'},
   {id:'slate-material',name:'Slate Surface',type:'textures',subcategory:'Materials',description:'A tileable slate material concept for paths, walls, and rooftops.',tags:['Stone','Tileable','Surface'],creator:'CloudBuilder',price:0,color:'blue'},
   {id:'woven-texture',name:'Woven Fabric',type:'textures',subcategory:'Textures',description:'A fabric texture concept for soft furnishings and wearable details.',tags:['Fabric','Tileable'],creator:'LunaBlocks',price:0,color:'purple'},
 ];
@@ -15,7 +17,13 @@ const catalogTags={
   'city-loops':['Music','Loops','Atmospheric'],'forest-sound':['Forest','Ambience','Nature'],'align-tools':['Building','Alignment','Studio'],'terrain-painter':['Terrain','Painting','Studio'],
   'signal-cap':['Casual','Hats'],'grid-shirt':['Casual','Graphic'],'cargo-pants':['Cargo','Streetwear'],'orbit-shoes':['Sneakers','Streetwear'],'scout-bot':['Robot','Companion'],'explorer-pack':['Adventure','Backpack'],'silver-chain':['Silver','Jewelry'],
 };
-export const publicAssets=[...marketplaceAssets,...extraAssets].map(asset=>({...asset,tags:asset.tags||catalogTags[asset.id],art:'art/assets/'+asset.id+'.svg'}));
+const packIds = new Set(['city-kit', 'nature-kit', 'sci-door', 'city-loops']);
+export const publicAssets = [...marketplaceAssets, ...extraAssets].map(asset => ({
+  ...asset,
+  kind: asset.kind || (packIds.has(asset.id) ? 'packs' : 'assets'),
+  tags: asset.tags || catalogTags[asset.id],
+  art: 'art/assets/' + asset.id + '.svg',
+}));
 export function assetTags(asset){return (asset.tags?.length?asset.tags:[asset.subcategory,creatorTypes[asset.type]]).filter(Boolean).slice(0,8);}
 export const assetById=(state,id)=>[...defaultTemplates,...publicAssets,...state.creatorAssets].find(asset=>asset.id===id);
 export function normalizeAssets(data){
