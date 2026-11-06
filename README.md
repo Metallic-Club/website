@@ -202,7 +202,7 @@ names, submitted Discord IDs, and browser preview flags are not identity proof.
 OAuth reference: https://docs.discord.com/developers/topics/oauth2
 
 
-## Storefront and game passes
+## Storefront and passes
 
 Home shows separate Continue playing, Favorites, and For you lists, with one-click
 favorite controls and a compact friends panel. Each horizontal list renders at
@@ -216,7 +216,7 @@ tags. Search, sorting, layout changes, and pagination preserve filters in the UR
 The read-only catalog endpoint also receives `tag` (up to 30 characters); only
 12 results render per page. Browser-only favorite controls stay local.
 
-Each sample game has a Game passes tab with one-time cosmetic extras. Viewing a
+Each sample game has a Passes tab with one-time cosmetic extras. Viewing a
 pass opens an explicit browser-only purchase preview. Confirming deducts its cost
 from `previewAlloy` and saves ownership in `gamePasses`; repeat purchases and
 insufficient balances are rejected. These values are editable demo data, never
