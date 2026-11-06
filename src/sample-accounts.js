@@ -1,13 +1,63 @@
 // Fictional accounts and trusted example claims. Never merge these claims with editable profile data.
 export const sampleAccounts = [
   {
+    "id": "sample-riverslate",
+    "name": "RiverSlate",
+    "avatar": 1,
+    "activity": "Offline",
+    "bio": "Collecting maps and taking the scenic route.",
+    "friendsVisibility": "friends"
+  },
+  {
+    "id": "sample-forgefern",
+    "name": "ForgeFern",
+    "avatar": 2,
+    "activity": "Using Studio",
+    "bio": "Working on a greenhouse full of puzzles.",
+    "friendsVisibility": "public"
+  },
+  {
+    "id": "sample-dockdash",
+    "name": "DockDash",
+    "avatar": 3,
+    "activity": "Playing Harbor Workshop",
+    "bio": "Building boats and testing them with friends.",
+    "game": "24",
+    "friendsVisibility": "public"
+  },
+  {
+    "id": "sample-micatrail",
+    "name": "MicaTrail",
+    "avatar": 1,
+    "activity": "Offline",
+    "bio": "I keep a list of good co-op games."
+  },
+  {
+    "id": "sample-brassstudio",
+    "name": "BrassStudio",
+    "avatar": 2,
+    "activity": "Using Studio",
+    "bio": "Making sound effects and little machines.",
+    "friendsVisibility": "public"
+  },
+  {
+    "id": "sample-cometdrift",
+    "name": "CometDrift",
+    "avatar": 3,
+    "activity": "Playing Orbit Speedway",
+    "bio": "Trying to shave a second off my lap time.",
+    "game": "32",
+    "friendsVisibility": "public"
+  },
+  {
     "id": "sample-herox_x",
     "name": "heroX_x",
     "avatar": 1,
     "activity": "Playing Cyber Raven",
     "bio": "Always up for one more adventure.",
     "game": "1",
-    "verifiedCreator": true
+    "verifiedCreator": true,
+    "friendsVisibility": "friends"
   },
   {
     "id": "sample-crimsonslayer",
@@ -15,7 +65,8 @@ export const sampleAccounts = [
     "avatar": 2,
     "activity": "Playing Cyber Raven",
     "bio": "Exploring worlds and chasing high scores.",
-    "game": "1"
+    "game": "1",
+    "friendsVisibility": "public"
   },
   {
     "id": "sample-00rip_indra",

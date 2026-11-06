@@ -1,3 +1,5 @@
+import {sampleAccounts} from './sample-accounts.js';
+
 // Shared policy for profile sections. Live services must apply the same policy
 // before returning private records; browser rendering is only a preview.
 export const privacySections = Object.freeze({
@@ -24,7 +26,11 @@ export function resolveProfilePrivacy(policy, {owner = false, friend = false, vi
 export function profilePermissions(state, name, viewAs = '') {
   const own = name === state.profile.name;
   const preview = own && ['friend', 'others'].includes(viewAs);
-  return resolveProfilePrivacy(own ? state.privacy : defaultPrivacy, {
+  const sampleVisibility = own ? undefined : sampleAccounts.find(account => account.name === name)?.friendsVisibility;
+  const samplePolicy = sampleVisibility === 'public' || sampleVisibility === 'friends'
+    ? {...defaultPrivacy, friends: {others: sampleVisibility === 'public', friends: true}}
+    : defaultPrivacy;
+  return resolveProfilePrivacy(own ? state.privacy : samplePolicy, {
     owner: own && !preview,
     friend: preview ? viewAs === 'friend' : !own && state.friends.includes(name),
     visibility: own ? state.profile.visibility : 'Everyone',

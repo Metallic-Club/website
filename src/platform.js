@@ -82,6 +82,12 @@ export function discoverGames(catalog, state, params) {
   return result;
 }
 export const connections = {
+  RiverSlate: ['ForgeFern', 'DockDash', 'MicaTrail'],
+  ForgeFern: ['RiverSlate', 'DockDash', 'BrassStudio'],
+  DockDash: ['RiverSlate', 'ForgeFern', 'CometDrift'],
+  MicaTrail: ['RiverSlate', 'BrassStudio'],
+  BrassStudio: ['ForgeFern', 'MicaTrail', 'CometDrift'],
+  CometDrift: ['DockDash', 'BrassStudio'],
   heroX_x: ['CRIMSONSLAYER', '00RIP_INDRA', 'LunaBlocks'],
   CRIMSONSLAYER: ['heroX_x', '00RIP_INDRA', 'CloudBuilder'],
   '00RIP_INDRA': ['heroX_x', 'CRIMSONSLAYER', 'OrbitKai'],

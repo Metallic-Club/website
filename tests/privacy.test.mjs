@@ -46,10 +46,21 @@ test('saved settings survive reload and owner-only previews cannot change anothe
   assert.equal(profilePermissions(restored,restored.profile.name).playtime,true);
   assert.equal(profilePermissions(restored,restored.profile.name,'others').playtime,false);
   assert.equal(profilePermissions(restored,restored.profile.name,'friend').playtime,true);
-  assert.equal(profilePermissions(restored,'heroX_x','friend').friends,false);
+  assert.equal(profilePermissions(restored,'00RIP_INDRA','friend').friends,false);
   restored.profile.visibility='Only me';
   assert.equal(profilePermissions(restored,restored.profile.name,'friend').profile,false);
   assert.equal(profilePermissions(restored,restored.profile.name).profile,true);
+});
+test('sample friends lists follow public, friends-only, and private visibility',()=>{
+  const state=structuredClone(defaults);
+  assert.equal(profilePermissions(state,'heroX_x').friends,true);
+  assert.equal(profilePermissions(state,'CRIMSONSLAYER').friends,true);
+  assert.equal(profilePermissions(state,'00RIP_INDRA').friends,false);
+  state.friends=[];
+  assert.equal(profilePermissions(state,'heroX_x','friend').friends,false);
+  assert.equal(profilePermissions(state,'CRIMSONSLAYER').friends,true);
+  assert.equal(profilePermissions(state,'CRIMSONSLAYER').favorites,false);
+  assert.equal(profilePermissions(state,state.profile.name,'friend').friends,false);
 });
 test('privacy form accepts only explicit visible values; missing fields stay hidden',()=>{
   const data=new FormData();data.set('privacy-friends-friends','visible');data.set('privacy-favorites-others','true');
