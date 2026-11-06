@@ -218,11 +218,14 @@ function landing() {
     <section class="beta-bottom"><div><span class="eyebrow">CLOSED BETA</span><h2>Have an invite?</h2><p>Enter your code to get started. If you already have a tester account, log in.</p></div><div>${link('signup','Enter invite code '+icon('arrow',17),'button primary')}${link('login','Already a tester? Log in','text-link')}</div></section>
     <section class="beta-faq"><h2>Questions about the beta</h2><details><summary>Who can use Metallic?</summary><p>Access is limited to invited beta testers. You need an invite code to register and a tester account to log in.</p></details><details><summary>Are games available yet?</summary><p>Metallic and its launcher are still in development. The games shown here are examples, not live releases.</p></details><details><summary>Can I customize my avatar?</summary><p>Not yet. The wardrobe is still in development. All profiles use a generic icon for now.</p></details></section>`;
 }
+function friendActivityTrigger(name, label) {
+  return button('friend-preview', label + ' ' + icon('arrow',10), 'friend-activity activity-trigger',
+    `data-name="${esc(name)}" aria-label="See activity for ${esc(name)}" aria-controls="friend-activity-popover" aria-expanded="false"`);
+}
 function friendStrip() {
   return `<section class="home-section friends-section"><div class="section-top"><h2>Friends <span class="muted">(${state.friends.length})</span></h2>${link('friends','See all '+icon('arrow',15),'view-all')}</div>
     <div class="friends-list"><a class="friend" href="#/friends?tab=find"><span class="friend-picture add">${icon('create',28)}</span><span class="friend-name">Add friends</span><span class="friend-activity">Find your people</span></a>
-    ${state.friends.slice(0,12).map(name => { const person=personInfo(name), activity=friendActivity(state,name); return `<div class="friend home-friend-preview" data-friend-preview="${esc(name)}"><a class="friend-profile" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${referenceAvatar(person.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span></a><button type="button" class="friend-activity activity-trigger" data-action="friend-preview" aria-label="See activity for ${esc(name)}" aria-controls="friend-activity-popover" aria-expanded="false">${activityText(name,activity?'In game':'')} ${icon('arrow',10)}</button></div>`; }).join('')}</div>
-    <div id="friend-activity-popover" class="friend-activity-popover" popover="manual" role="region" aria-label="Friend activity"></div></section>`;
+    ${state.friends.slice(0,12).map(name => { const person=personInfo(name), activity=friendActivity(state,name); return `<div class="friend home-friend-preview" data-friend-preview="${esc(name)}"><a class="friend-profile" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${referenceAvatar(person.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span></a>${friendActivityTrigger(name,activityText(name,activity?'In game':''))}</div>`; }).join('')}</div></section>`;
 }
 function home() { return storefront.home(); }
 function explore() { return storefront.explore(); }
@@ -386,11 +389,24 @@ function updateNotificationPopover(open=notificationsOpen) {
     ${items.length?`<div class="notification-list">${items.map(item=>`<a class="notification-entry ${state.readNotifications.includes(item.id)?'read':''}" href="#/${item.to}" data-action="read-notification" data-id="${item.id}">${item.name?referenceAvatar(personInfo(item.name).avatar):`<span class="notification-symbol">${icon('bell',19)}</span>`}<span><strong>${esc(item.title)}</strong><small>${esc(item.description)}</small></span>${!state.readNotifications.includes(item.id)?'<i></i>':''}</a>`).join('')}</div>`:'<div class="notification-empty">'+icon('bell',30)+'<h3>You’re all caught up</h3><p>Your notifications will appear here.</p></div>'}
     ${allItems.length>20?link('friends?tab=requests','View all friend requests →','notification-more'):''}<div class="notification-popover-footer">${button('read-all-notifications','Mark all as read','text-button',unread?'':'disabled')}${link('settings?section=notifications','Preferences','text-link')}</div>`;
 }
+function profileFriendCard(name, mutual, preview) {
+  const href = `#/profile?user=${encodeURIComponent(name)}`;
+  const picture = name === state.profile.name ? avatar() : referenceAvatar(personInfo(name).avatar);
+  const identity = `<span class="friend-picture">${picture}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span>`;
+  const label = mutual ? 'Mutual friend' : activityText(name);
+  if (!preview && name !== state.profile.name && state.friends.includes(name)) {
+    return `<div class="friend profile-friend-preview" data-friend-preview="${esc(name)}">
+      <a class="friend-profile" href="${href}">${identity}</a>
+      ${friendActivityTrigger(name, mutual ? label : activityText(name, 'In game'))}
+    </div>`;
+  }
+  return `<a class="friend" href="${href}">${identity}<span class="friend-activity">${label}</span></a>`;
+}
 function profileFriends(names, owner, mutual=[], mutualOnly=false, preview=false) {
   const displayed=mutualOnly?mutual:names, friendPage=pageWindow(displayed,params.get('friendPage'));
   return `<section class="profile-section profile-friends"><div class="section-top"><h2>Friends <span class="muted">(${names.length})</span></h2>${owner&&!preview?link('friends','See all →','view-all'):''}</div>
     ${!owner?`<div class="profile-friend-filters">${link('profile?user='+encodeURIComponent(params.get('user')||state.profile.name),'All friends',!mutualOnly?'selected':'')}${link('profile?user='+encodeURIComponent(params.get('user')||state.profile.name)+'&friends=mutual',`Mutual friends (${mutual.length})`,mutualOnly?'selected':'')}</div>`:''}
-    ${displayed.length?`<div class="friends-list">${friendPage.items.map(name=>{const info=name===state.profile.name?{name,activity:state.activity?'Online':'Offline',avatar:0}:personInfo(name);return `<a class="friend" href="#/profile?user=${encodeURIComponent(name)}"><span class="friend-picture">${info.avatar===0?avatar():referenceAvatar(info.avatar)}${presenceDot(name)}</span><span class="friend-name">${accountName(name)}</span><span class="friend-activity">${mutual.includes(name)?'Mutual friend':activityText(name)}</span></a>`;}).join('')}</div>`:`<div class="inline-empty">${mutualOnly?'You don’t share any friends yet.':'No friends to show yet.'}${owner&&!preview?' '+link('friends?tab=find','Find people →','text-link'):''}</div>`}${pageLinks(friendPage,'profile friends','friendPage')}</section>`;
+    ${displayed.length?`<div class="friends-list">${friendPage.items.map(name=>profileFriendCard(name,mutual.includes(name),preview)).join('')}</div>`:`<div class="inline-empty">${mutualOnly?'You don’t share any friends yet.':'No friends to show yet.'}${owner&&!preview?' '+link('friends?tab=find','Find people →','text-link'):''}</div>`}${pageLinks(friendPage,'profile friends','friendPage')}</section>`;
 }
 function settingsForm(section,fields) {
   return `<form id="settings-form" class="settings-form section-settings-form" data-section="${section}"><section class="panel"><h2>${settingsSections[section][0]}</h2><p class="settings-description">${settingsSections[section][1]}</p>${fields}</section><div class="settings-save"><span class="muted small-text">Saved to this browser</span><button type="submit" class="button primary">${icon('check',17)} Save changes</button></div></form>`;
@@ -592,9 +608,16 @@ function showFriendPreview(trigger) {
   menu.innerHTML=`<span class="friend-popover-label">${accountName(name)} · ${activityText(name,activity?'Playing now':'')}</span>${activity?`<a class="friend-playing-game" href="#/game/${activity.game.id}"><img src="${activity.game.art}" alt=""><span><strong>${esc(activity.game.title)}</strong><small>${esc(activity.game.genre)}</small></span></a><div class="friend-popover-actions">${link('profile?user='+encodeURIComponent(name),'View profile','text-link')}${button('join-friend',activity.access.allowed?'Join':activity.access.reason,'button primary small',`data-name="${esc(name)}" ${activity.access.allowed?'':'disabled'}`)}</div>`:`<p>${info.activity==='Offline'?'This friend is offline.':'This friend isn’t playing a game right now.'}</p>${link('profile?user='+encodeURIComponent(name),'View profile →','text-link')}`}`;
   menu.setAttribute('aria-label',name+' activity');menu.showPopover();
   trigger.querySelector('.activity-trigger').setAttribute('aria-expanded','true');
+  positionFriendPreview(trigger,menu);
+}
+function positionFriendPreview(trigger,menu) {
   const anchor=trigger.getBoundingClientRect(), rect=menu.getBoundingClientRect();
-  menu.style.left=Math.max(10,Math.min(anchor.left+anchor.width/2-rect.width/2,innerWidth-rect.width-10))+'px';
-  menu.style.top=Math.max(10,Math.min(anchor.bottom+7,innerHeight-rect.height-10))+'px';
+  const {clientWidth,clientHeight}=document.documentElement;
+  if(anchor.bottom<=0||anchor.top>=clientHeight||anchor.right<=0||anchor.left>=clientWidth){closeFriendPreview();return;}
+  const below=anchor.bottom+7, above=anchor.top-rect.height-7;
+  const top=below+rect.height+10<=clientHeight||above<10?below:above;
+  menu.style.left=Math.max(10,Math.min(anchor.left+anchor.width/2-rect.width/2,clientWidth-rect.width-10))+'px';
+  menu.style.top=Math.max(10,Math.min(top,clientHeight-rect.height-10))+'px';
 }
 function scheduleFriendClose(related) {
   const menu=document.querySelector('#friend-activity-popover');
@@ -816,8 +839,8 @@ document.addEventListener('focusin',e=>{const trigger=e.target.closest('[data-fr
 document.addEventListener('keydown',e=>{
   const inField=e.target.matches('input,textarea,select')||e.target.isContentEditable;
   if(e.key==='/'&&!inField&&!dialog.open){const search=document.querySelector('#site-search');if(search){e.preventDefault();search.focus();}}
-  if(e.key==='ArrowDown'&&e.target.closest('[data-friend-preview]')){e.preventDefault();showFriendPreview(e.target.closest('[data-friend-preview]'));document.querySelector('#friend-activity-popover a')?.focus();}
-  if(e.key==='Tab'&&!e.shiftKey&&e.target.classList.contains('activity-trigger')&&activeFriendTrigger){e.preventDefault();document.querySelector('#friend-activity-popover a')?.focus();}
+  if(e.key==='ArrowDown'&&e.target.closest('[data-friend-preview]')){e.preventDefault();showFriendPreview(e.target.closest('[data-friend-preview]'));document.querySelector('#friend-activity-popover a')?.focus({preventScroll:true});}
+  if(e.key==='Tab'&&!e.shiftKey&&e.target.classList.contains('activity-trigger')&&activeFriendTrigger){e.preventDefault();document.querySelector('#friend-activity-popover a')?.focus({preventScroll:true});}
   if(e.key==='Escape'){const trigger=activeFriendTrigger?.querySelector('.activity-trigger');closeFriendPreview();trigger?.focus();closeFriendPreview();closeSuggestions();if(notificationsOpen){updateNotificationPopover(false);document.querySelector('#notification-toggle')?.focus();}if(document.body.classList.contains('nav-open'))setMenu(false);}
   if(e.key==='ArrowDown'&&e.target.id==='site-search'){const first=document.querySelector('#search-suggestions:not([hidden]) a');if(first){e.preventDefault();first.focus();}}
   if(e.target.closest('#search-suggestions')&&['ArrowDown','ArrowUp'].includes(e.key)){
@@ -831,7 +854,15 @@ document.addEventListener('keydown',e=>{
   }
 });
 document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement&&!e.target.dataset.fallback){e.target.dataset.fallback='1';e.target.src='art/game-unavailable.svg';}},true);
-document.addEventListener('scroll',e=>{if(!e.target.closest?.('#friend-activity-popover'))closeFriendPreview();if(e.target.classList?.contains('card-scroller'))updateShelfControls();},true);
+document.addEventListener('scroll',e=>{
+  if(activeFriendTrigger&&!e.target.closest?.('#friend-activity-popover')){
+    const menu=document.querySelector('#friend-activity-popover');
+    const focused=menu.contains(document.activeElement)||activeFriendTrigger.contains(document.activeElement);
+    if(focused)positionFriendPreview(activeFriendTrigger,menu);
+    else closeFriendPreview();
+  }
+  if(e.target.classList?.contains('card-scroller'))updateShelfControls();
+},true);
 window.addEventListener('resize',()=>{closeFriendPreview();if(innerWidth>820&&document.body.classList.contains('nav-open'))setMenu(false);syncSidebarState();updateShelfControls();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const rect=dialog.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)dialog.close();}});
 window.addEventListener('focus',()=>{if(!loginBusy)refreshSession();});
