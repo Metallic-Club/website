@@ -1,3 +1,4 @@
+import {normalizeReports} from './content-reports.js';
 import {normalizeMarketplaceState} from './marketplace-checkout.js';
 import {normalizeGenre} from './genres.js';
 import {normalizePasses} from './game-passes.js';
@@ -20,7 +21,7 @@ export const colors = [
   { value: '#24262b', name: 'Charcoal' }, { value: '#d97c47', name: 'Terracotta' },
 ];
 export const defaults = {
-  gamePasses: [], marketCart: [], marketGifts: [],
+  gamePasses: [], marketCart: [], marketGifts: [], reports: [],
   privacy: normalizePrivacy(),
   groupNewsPosts: [], groupNewsSubscriptions: {}, discordPreview: false,
   profile: { name: 'RavenDev', bio: 'Building worlds. Finding adventures.', visibility: 'Everyone', youtubeUrl: '' },
@@ -67,6 +68,7 @@ export function loadState(storage) {
     normalizeSocialState(data, state);
     normalizeNewsState(data,state);
     normalizeMarketplaceState(data,state);
+    state.reports = normalizeReports(data.reports);
   } catch { /* Unavailable or corrupt storage uses safe defaults. */ }
   return state;
 }
