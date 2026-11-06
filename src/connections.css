@@ -24,8 +24,9 @@ input[type="search"]:focus::placeholder{opacity:0}
 .search-person-card>.ico,.search-group-card>.ico{flex:none;color:var(--tone-a4a8b2,#a4a8b2)}
 .friend-profile{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;width:100%}
 .friend-profile .friend-name{max-width:100%}
-.home-friend-preview .activity-trigger{border:0;background:none;padding:1px 0;display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--tone-a9adb8,#a9adb8);font:inherit;font-size:10px;max-width:100%}
-.home-friend-preview .activity-trigger:hover{color:var(--tone-ffffff,#fff)}
+[data-friend-preview] .activity-trigger{border:0;background:none;padding:1px 0;display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--tone-a9adb8,#a9adb8);font:inherit;font-size:10px;max-width:100%}
+[data-friend-preview] .activity-trigger:hover{color:var(--tone-ffffff,#fff)}
+.profile-friend-preview .activity-trigger .ico{flex:none}
 .friend-activity-popover{position:fixed;inset:auto;margin:0;width:270px;max-width:calc(100vw - 20px);box-sizing:border-box;padding:15px;background:var(--tone-27292f,#27292f);color:var(--tone-f0f1f5,#f0f1f5);border:1px solid var(--tone-494d57,#494d57);border-radius:10px;box-shadow:0 12px 40px #0007;overflow:visible}
 .friend-activity-popover::backdrop{background:transparent;pointer-events:none}
 .friend-popover-label{display:block;color:var(--tone-b5b8c2,#b5b8c2);font-size:10px;line-height:1.5;margin-bottom:11px;overflow-wrap:anywhere}
