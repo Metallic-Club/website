@@ -1,5 +1,6 @@
 /* Personal library and discovery. Shared semantic colors follow the selected theme. */
-.store-home-columns{display:grid;grid-template-columns:minmax(0,1fr) 226px;gap:28px;align-items:start}
+.store-home-columns{display:grid;grid-template-columns:minmax(0,1fr) 226px;grid-template-areas:"games friends";gap:28px;align-items:start}
+.store-home-main{grid-area:games}
 .store-home-main,.store-results{min-width:0}
 .store-home .section-top h2,.store-explore .section-top h2{font-size:21px}
 .store-home .section-top{align-items:center;gap:16px;margin-bottom:16px}
@@ -26,7 +27,7 @@
 .store-favorites-empty h3{font-size:15px;margin:0 0 6px}
 .store-favorites-empty p{font-size:12px;color:var(--muted);line-height:1.7;margin:0}
 .store-favorites-empty>.button{margin-left:auto;flex:none;font-size:11px}
-.store-home-aside{position:sticky;top:calc(var(--header-h) + 24px);border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:16px;min-width:0}
+.store-home-aside{grid-area:friends;position:sticky;top:calc(var(--header-h) + 24px);border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:16px;min-width:0}
 .store-home.home-dashboard .friends-section{margin:0;padding:0;border:0}
 .store-home.home-dashboard .friends-section>.section-top{gap:8px;margin:0 0 12px}
 .store-home.home-dashboard .friends-section h2{font-size:15px}
