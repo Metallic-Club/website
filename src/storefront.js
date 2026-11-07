@@ -30,11 +30,13 @@ export function createStorefront(ctx){
     const minutes=recent.reduce((sum,record)=>sum+record.minutesPlayed,0);
     const favoritesEmpty=`<div class="store-favorites-empty"><span>${icon('heart',25)}</span><div><h3>Keep your favorites here</h3><p>Use the heart on any game to save it to this list.</p></div>${link('explore','Find games '+icon('arrow',15),'button small')}</div>`;
     return `<div class="store-home home-dashboard">${pageHead('Home','Welcome back, '+esc(state.profile.name)+'.',link('explore','Explore games '+icon('arrow',16),'button small'))}
-      <div class="store-home-columns"><div class="store-home-main">
+      <div class="store-home-columns">
+      <aside class="store-home-aside" aria-label="Friends and library">${friendStrip()}<section class="store-library-summary"><span class="eyebrow">YOUR TIME ON METALLIC</span><strong>${formatPlaytime(minutes)}</strong><p>Across ${recent.length} games · Sample playtime</p>${link('profile','View your profile →','text-link')}</section></aside>
+      <div class="store-home-main">
       ${rail('Continue playing','Pick up where you left off. Sample play history.',continued,'continue-games','',empty('Find your first game','Your recently played games will appear here.',link('explore','Explore games','button')))}
       ${rail('Favorites',favorites.length?favorites.length+' saved game'+(favorites.length===1?'':'s')+'. Always easy to find.':'Your saved games, all together.',favoriteCards,'favorite-games',favorites.length>8?link('profile','View all '+favorites.length,'view-all'):'',favoritesEmpty)}
       ${recommended.length?rail('For you',state.preferredGenres.length?'Based on your interests and favorites.':'A few games outside your recent list.',recommended,'recommended-games',link('explore','See more →','view-all')):''}
-      </div><aside class="store-home-aside" aria-label="Friends and library">${friendStrip()}<section class="store-library-summary"><span class="eyebrow">YOUR TIME ON METALLIC</span><strong>${formatPlaytime(minutes)}</strong><p>Across ${recent.length} games · Sample playtime</p>${link('profile','View your profile →','text-link')}</section></aside></div></div>`;
+      </div></div></div>`;
   }
   function row(game){
     const info=metadataFor(game,gameDetails);
