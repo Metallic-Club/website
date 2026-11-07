@@ -36,14 +36,16 @@ test('specific tags combine with other filters and have separate cache entries',
   const repo=createLocalCatalog(catalog);
   assert.deepEqual(repo.list(new URLSearchParams('category=Adventure&mode=Co-op&tag=survival'),state).items.map(game=>game.id),['1']);
   assert.deepEqual(repo.list(new URLSearchParams('category=Adventure&mode=Co-op&tag=Building'),state).items.map(game=>game.id),['3']);
+  assert.deepEqual(repo.list(new URLSearchParams('tag=survival&tag=Ocean&tag=SURVIVAL'),state).items.map(game=>game.id),['1']);
+  assert.equal(repo.list(new URLSearchParams('tag=Ocean&tag=Building'),state).total,0);
   assert.equal(repo.list(new URLSearchParams('tag=unknown'),state).total,0);
   assert.equal(repo.list(new URLSearchParams(),state).total,4);
 });
-test('remote catalog forwards a bounded tag without sending browser-only filters',async()=>{
+test('remote catalog forwards bounded tags without sending browser-only filters',async()=>{
   let query;
   const client=createCatalogClient({local,endpoint:'https://api.example.com',fetchImpl:async url=>{query=url.searchParams;return response({items:[game(1)],total:1});}});
-  await client.list(new URLSearchParams({tag:'x'.repeat(80),unplayed:'1',view:'grid',token:'private'}),state);
-  assert.equal(query.get('tag'),'x'.repeat(30));assert.equal(query.get('unplayed'),null);assert.equal(query.get('view'),null);assert.equal(query.get('token'),null);
+  await client.list(new URLSearchParams('tag='+ 'x'.repeat(80)+'&tag=Ocean&tag=ocean&unplayed=1&view=grid&token=private'),state);
+  assert.deepEqual(query.getAll('tag'),['x'.repeat(30),'Ocean']);assert.equal(query.get('unplayed'),null);assert.equal(query.get('view'),null);assert.equal(query.get('token'),null);
 });
 test('catalog client caches bounded pages, normalizes query input and avoids exposing account preferences',async()=>{
   let calls=0,last;

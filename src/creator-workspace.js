@@ -1,3 +1,5 @@
+import {genres, normalizeGenre} from './genres.js';
+import {normalizeGameTags, gameTagLimit, gameTagLength} from './game-tags.js';
 import {escapeHtml as esc} from './store.js';
 import {creatorTypes,cosmeticSlots} from './platform.js';
 import {createMarketplace,listingLabels} from './marketplace-ui.js';
@@ -25,7 +27,7 @@ export function createCreatorWorkspace(ctx){
     return pageHead('Creator hub','Build something worth playing.',`<div class="button-row">${link('docs','Creator docs','button')}${button('upload-asset',icon('share',17)+' '+(tab==='templates'?'Add local template':'Upload asset'),'button primary',`data-value="${tab}"`)}</div>`)+
       `<nav class="creator-category-tabs" aria-label="Creator categories">${Object.entries(creatorTypes).map(([key,label])=>link('create?tab='+key,glyph(key,18)+label,key===tab?'selected':'')).join('')}</nav>`+
       (tab==='cosmetics'?`<nav class="cosmetic-slots" aria-label="Cosmetic categories">${link('create?tab=cosmetics','All cosmetics',!slot?'selected':'')}${cosmeticSlots.map(name=>link('create?tab=cosmetics&slot='+name,name,slot===name?'selected':'')).join('')}</nav>`:'')+
-      (tab==='games'?`<section class="creator-welcome panel"><div><span class="eyebrow">YOUR NEXT GAME STARTS HERE</span><h2>Start with a template. Make it your own.</h2><p>Choose a default template or bring one from your computer. Templates stay on your device and are never stored on our servers.</p><div class="button-row">${link('create?tab=templates','Browse templates '+icon('arrow',16),'button primary')}${link('download','Get Metallic Studio','button')}</div></div><img src="art/game-2.svg" alt="Obby starter concept" width="480" height="300"></section>`:'')+
+      (tab==='games'?`<section class="creator-welcome panel"><div><span class="eyebrow">YOUR NEXT GAME STARTS HERE</span><h2>Start with a template. Make it your own.</h2><p>Choose a default template or bring one from your computer. Templates stay on your device and are never stored on our servers.</p><div class="button-row">${link('create?tab=templates','Browse templates '+icon('arrow',16),'button primary')}${link('download','Get Metallic Studio','button')}</div></div><img src="art/game-unavailable.svg" alt="Obby starter concept" width="480" height="300"></section>`:'')+
       `<div class="section-top creator-library-heading"><div><h2>${slot||creatorTypes[tab]}</h2><p class="section-sub">${tab==='templates'?'Default starters and your custom templates, available locally.':tab==='games'?'Your imported game packages. Published games appear on your profile.':'Browse assets, see their details, and add useful finds to your inventory.'}</p></div>${link('marketplace','Creator Marketplace →','text-link')}</div>`+
       (tab!=='templates'?`<nav class="creator-library-tabs" aria-label="Library view">${link(base,tab==='games'?'Game files':'Browse assets',!inventory?'selected':'')}${link(base+'&view=inventory','Inventory',inventory?'selected':'')}</nav>`:'')+
       `${items.length?`<div class="marketplace-grid">${page.items.map(asset => assetCard(asset)).join('')}</div>`:ctx.empty(inventory?'Your inventory is empty.':tab==='games'?'No game files yet.':'No assets here yet.',inventory?'Open an asset to add it to your inventory.':tab==='games'?'Start with a template or import a game package from your computer.':'Import files to add an asset to this library.',link('create?tab=templates','Browse templates','button'))}${pageLinks(page,'assets')}`+
@@ -37,11 +39,49 @@ export function createCreatorWorkspace(ctx){
     const rating=ratingFor(state(),asset),vote=state().assetVotes[id],listing=listingFor(id);
     return (listing ? link('marketplace','← Creator Marketplace','text-link') : link('create?tab='+asset.type,'← '+creatorTypes[asset.type],'text-link'))+
       `<section class="creator-asset-detail"><div class="creator-asset-preview color-${asset.color||'blue'}">${asset.art?`<img src="${asset.art}" alt="${esc(asset.name)} preview">`:glyph(asset.type,100)}<div class="asset-media" data-asset-media="${asset.id}"></div><span class="asset-preview-label">${asset.local?'LOCAL FILE':asset.defaultTemplate?'DEFAULT TEMPLATE':'ASSET CONCEPT'}</span></div><div class="creator-asset-summary"><span class="eyebrow">${esc(listing ? listingLabels[asset.kind]+' · '+asset.subcategory : creatorTypes[asset.type])}</span><div class="content-heading-actions"><h1>${esc(asset.name)}</h1>${asset.local?'':ctx.contentTrigger('item',id,asset.name)}</div><p class="game-creator">${asset.local?'Imported by you':`By ${link('profile?user='+encodeURIComponent(asset.creator),ctx.accountName(asset.creator),'text-link')}`}</p><p>${esc(asset.description)||'No description provided.'}</p><div class="game-tag-row">${assetTags(asset).map(tag=>`<span>${esc(tag)}</span>`).join('')}</div><div class="asset-rating-summary"><strong>${rating.percent===null?'No ratings yet':rating.percent+'% liked'}</strong><span>${rating.total.toLocaleString()} ${rating.total===1?'rating':'ratings'}${!asset.local&&!asset.defaultTemplate?' · Sample ratings':''}</span></div>${market.actions(asset)}${asset.type==='templates'?button('download-template',icon('download',18)+' '+(asset.local?'Download template':'Download starter'),'button full template-download',`data-id="${id}"`):''}<div class="asset-vote-buttons" role="group" aria-label="Rate this asset">${button('vote-asset',icon('thumbs',18)+' Like <span>'+rating.likes+'</span>','button',`data-id="${id}" data-value="1" aria-pressed="${vote===1}"`)}${button('vote-asset','<span class="thumb-down">'+icon('thumbs',18)+'</span> Dislike <span>'+rating.dislikes+'</span>','button',`data-id="${id}" data-value="-1" aria-pressed="${vote===-1}"`)}</div><p class="fine-print">${asset.type==='templates'?'Templates are stored only on your device. Starter downloads are example scene specifications for the upcoming Studio format.':asset.local?'These files are on this device. They have not been uploaded to Metallic.':'Sample listing. Library changes use this browser’s preview inventory.'}</p></div></section>`+
-      `<section class="panel asset-information"><h2>Asset details</h2><dl><div><dt>Type</dt><dd>${esc(creatorTypes[asset.type])}</dd></div><div><dt>Category</dt><dd>${esc(asset.subcategory)}</dd></div><div><dt>Availability</dt><dd>${asset.local?'This device':asset.defaultTemplate?'Included starter':'Sample catalog'}</dd></div></dl>${asset.files?.length?`<h3>Files (${asset.files.length})</h3><ul class="asset-files">${asset.files.map(file=>`<li><span>${esc(file.name)}</span><span>${sizeLabel(file.size)}</span></li>`).join('')}</ul>`:''}${asset.local?button('remove-local-asset','Remove from this device','button danger small',`data-id="${id}"`):''}</section>`;
+      `<section class="panel asset-information"><h2>Asset details</h2><dl><div><dt>Type</dt><dd>${esc(creatorTypes[asset.type])}</dd></div><div><dt>Category</dt><dd>${esc(asset.subcategory)}</dd></div>${asset.local&&asset.type==='games'?`<div><dt>Genre</dt><dd>${esc(asset.genre||'Not set')}</dd></div>`:''}<div><dt>Availability</dt><dd>${asset.local?'This device':asset.defaultTemplate?'Included starter':'Sample catalog'}</dd></div></dl>${asset.files?.length?`<h3>Files (${asset.files.length})</h3><ul class="asset-files">${asset.files.map(file=>`<li><span>${esc(file.name)}</span><span>${sizeLabel(file.size)}</span></li>`).join('')}</ul>`:''}${asset.local&&asset.type==='games'?button('edit-game-metadata','Edit genre and tags','button small',`data-id="${id}"`):''}${asset.local?button('remove-local-asset','Remove from this device','button danger small',`data-id="${id}"`):''}</section>`;
+  }
+  function gameGenreField(genre='', hidden=false) {
+    return `<fieldset class="game-genre-field" ${hidden?'hidden disabled':''}>
+      <label for="creator-game-genre">Game genre</label>
+      <select id="creator-game-genre" name="genre" required>
+        <option value="">Choose a genre</option>
+        ${genres.map(value=>`<option ${value===genre?'selected':''}>${esc(value)}</option>`).join('')}
+      </select>
+    </fieldset>`;
+  }
+  function gameMetadataEditor(asset) {
+    modal('Edit game discovery', `<form id="game-metadata-form" data-id="${asset.id}">
+      <p class="muted">${esc(asset.name)}</p>
+      ${gameGenreField(asset.genre)}
+      <label for="creator-game-tags">Game tags</label>
+      <input id="creator-game-tags" name="tags" maxlength="270" value="${esc(asset.tags.join(', '))}">
+      <p class="field-hint">Separate up to ${gameTagLimit} tags with commas. Each tag can be up to ${gameTagLength} characters.</p>
+      <p class="fine-print">These settings are saved with the game package on this device.</p>
+      <p class="form-error" role="alert"></p>
+      <button type="submit" class="button primary">Save game details</button>
+    </form>`);
+  }
+  function saveGameMetadata(form) {
+    const asset = state().creatorAssets.find(asset=>asset.id===form.dataset.id && asset.type==='games');
+    const data = new FormData(form);
+    const genre = normalizeGenre(data.get('genre'));
+    if (!asset || !genre) return;
+    const before = {genre: asset.genre, tags: asset.tags};
+    asset.genre = genre;
+    asset.tags = normalizeGameTags(data.get('tags').split(','));
+    if (!ctx.save()) {
+      Object.assign(asset, before);
+      form.querySelector('.form-error').textContent = 'Could not save game details. Check your browser storage.';
+      return;
+    }
+    dialog.close();
+    render();
+    toast('Game details saved.');
   }
   function uploadEditor(initial='models'){
     pending=[];uploading=false;const type=Object.hasOwn(creatorTypes,initial)?initial:'models';
-    modal(type==='templates'?'Add local template':'Upload asset',`<form id="creator-upload-form"><p class="muted">Choose files, select a folder, or drag files here. Imports stay on this device while online uploads are in development.</p><label for="upload-type">Asset type</label><select name="type" id="upload-type">${Object.entries(creatorTypes).map(([key,label])=>`<option value="${key}" ${type===key?'selected':''}>${label}</option>`).join('')}</select><div class="asset-drop-zone" id="asset-drop-zone" tabindex="0" role="group" aria-label="Drop asset files here">${icon('share',32)}<strong>Drop files or a folder here</strong><span>Up to 100 files · 50 MB per file · 100 MB total</span><div class="button-row"><label class="button small file-picker">Choose files<input type="file" id="asset-files" multiple accept="${fileFormats[type]}"></label><label class="button small file-picker">Choose folder<input type="file" id="asset-folder" multiple webkitdirectory></label></div></div><p class="field-hint" id="upload-formats">Supported: ${fileFormats[type]}</p><div id="upload-selection" class="upload-selection" aria-live="polite">No files selected</div><label for="upload-name">Asset name</label><input name="name" id="upload-name" required maxlength="60" placeholder="Name your asset"><label for="upload-subcategory">Category</label><select name="subcategory" id="upload-subcategory">${subtype(type).map(name=>`<option>${name}</option>`).join('')}</select><label for="upload-description">Description</label><textarea name="description" id="upload-description" rows="3" maxlength="1000" placeholder="What is this asset useful for?"></textarea><label for="upload-tags">Tags</label><input name="tags" id="upload-tags" maxlength="200" placeholder="Nature, low poly, forest"><small class="field-hint">Separate tags with commas. Up to 8 tags.</small><p id="upload-error" class="form-error" role="alert"></p><button type="submit" class="button primary full">${type==='templates'?'Add template locally':'Import asset locally'}</button></form>`);
+    modal(type==='templates'?'Add local template':'Upload asset',`<form id="creator-upload-form"><p class="muted">Choose files, select a folder, or drag files here. Imports stay on this device while online uploads are in development.</p><label for="upload-type">Asset type</label><select name="type" id="upload-type">${Object.entries(creatorTypes).map(([key,label])=>`<option value="${key}" ${type===key?'selected':''}>${label}</option>`).join('')}</select><div class="asset-drop-zone" id="asset-drop-zone" tabindex="0" role="group" aria-label="Drop asset files here">${icon('share',32)}<strong>Drop files or a folder here</strong><span>Up to 100 files · 50 MB per file · 100 MB total</span><div class="button-row"><label class="button small file-picker">Choose files<input type="file" id="asset-files" multiple accept="${fileFormats[type]}"></label><label class="button small file-picker">Choose folder<input type="file" id="asset-folder" multiple webkitdirectory></label></div></div><p class="field-hint" id="upload-formats">Supported: ${fileFormats[type]}</p><div id="upload-selection" class="upload-selection" aria-live="polite">No files selected</div><label for="upload-name">Asset name</label><input name="name" id="upload-name" required maxlength="60" placeholder="Name your asset"><label for="upload-subcategory">Category</label><select name="subcategory" id="upload-subcategory">${subtype(type).map(name=>`<option>${name}</option>`).join('')}</select>${gameGenreField('',type!=='games')}<label for="upload-description">Description</label><textarea name="description" id="upload-description" rows="3" maxlength="1000" placeholder="What is this asset useful for?"></textarea><label for="upload-tags">Tags</label><input name="tags" id="upload-tags" maxlength="${type==='games'?270:200}" placeholder="Nature, low poly, forest"><small class="field-hint">Separate tags with commas. Up to 8 tags.</small><p id="upload-error" class="form-error" role="alert"></p><button type="submit" class="button primary full">${type==='templates'?'Add template locally':'Import asset locally'}</button></form>`);
   }
   function sizeLabel(size){return size<1024*1024?(size/1024).toFixed(1)+' KB':(size/1024/1024).toFixed(1)+' MB';}
   function showSelection(files){
@@ -54,8 +94,14 @@ export function createCreatorWorkspace(ctx){
     if(uploading)return;const data=new FormData(form),type=data.get('type'),error=validateFiles(pending,type),name=data.get('name').trim();
     const errorNode=form.querySelector('#upload-error');if(error||!name){errorNode.textContent=error||'Enter an asset name.';return;}
     if(state().creatorAssets.length>=100){errorNode.textContent='This browser library can contain up to 100 assets.';return;}
+    const genre=normalizeGenre(data.get('genre'));
+    if(type==='games'&&!genre){errorNode.textContent='Choose a game genre.';return;}
     const id=crypto.randomUUID(),entries=pending.map((file,index)=>({key:id+'-'+index,file}));
     const asset={id,name,type,subcategory:data.get('subcategory'),description:data.get('description').trim(),tags:[...new Set(data.get('tags').split(',').map(tag=>tag.trim().slice(0,24)).filter(Boolean))].slice(0,8),price:0,local:true,files:entries.map(({key,file})=>({key,name:file.webkitRelativePath||file.name,size:file.size,mime:file.type}))};
+    if(type==='games'){
+      asset.genre=genre;
+      asset.tags=normalizeGameTags(data.get('tags').split(','));
+    }
     uploading=true;const submit=form.querySelector('[type="submit"]');submit.disabled=true;submit.textContent='Importing…';
     try{await storeFiles(entries);state().creatorAssets.push(asset);state().inventory.push(id);if(!ctx.save()){state().creatorAssets.pop();state().inventory=state().inventory.filter(value=>value!==id);await deleteFiles(entries.map(entry=>entry.key));throw Error('Browser storage is full or unavailable.');}pending=[];dialog.close();navigate('/assets/'+id);toast(type==='templates'?'Template added on this device.':'Asset imported on this device.');}
     catch(error){errorNode.textContent=error.message||'Unable to import files. Check browser storage space.';submit.disabled=false;submit.textContent='Try import again';}finally{uploading=false;}
@@ -67,6 +113,7 @@ export function createCreatorWorkspace(ctx){
     if(action==='upload-asset'){uploadEditor(value);return true;}
     if(action==='clear-upload'){showSelection([]);return true;}
     const asset=assetById(state(),id);if(!asset)return false;
+    if(action==='edit-game-metadata' && asset.local && asset.type==='games'){gameMetadataEditor(asset);return true;}
     if(action==='inventory-asset'){
       if(asset.price){toast('Review the price before buying this listing.');return true;}
       if(state().inventory.includes(id))return true;
@@ -88,7 +135,11 @@ export function createCreatorWorkspace(ctx){
   }
   function change(event){
     if(['asset-files','asset-folder'].includes(event.target.id))showSelection(event.target.files);
-    if(event.target.id==='upload-type'){const type=event.target.value;document.querySelector('#asset-files').accept=fileFormats[type];document.querySelector('#upload-formats').textContent='Supported: '+fileFormats[type];document.querySelector('#creator-upload-form [type=submit]').textContent=type==='templates'?'Add template locally':'Import asset locally';document.querySelector('#upload-subcategory').innerHTML=subtype(type).map(name=>`<option>${name}</option>`).join('');showSelection(pending);}
+    if(event.target.id==='upload-type'){const type=event.target.value;
+      const gameGenre = dialog.querySelector('.game-genre-field');
+      gameGenre.hidden = gameGenre.disabled = type !== 'games';
+      dialog.querySelector('#upload-tags').maxLength = type==='games' ? 270 : 200;
+      document.querySelector('#asset-files').accept=fileFormats[type];document.querySelector('#upload-formats').textContent='Supported: '+fileFormats[type];document.querySelector('#creator-upload-form [type=submit]').textContent=type==='templates'?'Add template locally':'Import asset locally';document.querySelector('#upload-subcategory').innerHTML=subtype(type).map(name=>`<option>${name}</option>`).join('');showSelection(pending);}
   }
   document.addEventListener('dragover',event=>{if(dialog.querySelector('#creator-upload-form')&&event.dataTransfer?.types.includes('Files')){event.preventDefault();dialog.querySelector('.asset-drop-zone').classList.add('dragging');}});
   document.addEventListener('dragleave',event=>{if(!event.relatedTarget?.closest?.('#asset-drop-zone'))dialog.querySelector('.asset-drop-zone')?.classList.remove('dragging');});
@@ -99,5 +150,5 @@ export function createCreatorWorkspace(ctx){
     const file=asset.files.find(file=>/\.(png|jpe?g|webp|avif|mp3|wav|ogg|flac|m4a)$/i.test(file.name));if(!file)return;
     readFile(file.key).then(blob=>{if(!blob||sequence!==mountSequence||!root.isConnected)return;const url=URL.createObjectURL(blob);objectUrls.push(url);const media=document.createElement(/\.(mp3|wav|ogg|flac|m4a)$/i.test(file.name)?'audio':'img');media.src=url;if(media.tagName==='AUDIO')media.controls=true;else media.alt=asset.name+' preview';root.append(media);}).catch(()=>{});
   }
-  return {createPage,marketplacePage:market.page,assetPage,uploadEditor,handleAction,importAsset,change,mountPreviews};
+  return {createPage,marketplacePage:market.page,assetPage,uploadEditor,handleAction,importAsset,saveGameMetadata,change,mountPreviews};
 }

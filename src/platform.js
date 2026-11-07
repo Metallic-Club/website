@@ -1,4 +1,5 @@
 import {genres,normalizeGenre} from './genres.js';
+import {normalizeGameTags,selectedGameTags} from './game-tags.js';
 export {genres} from './genres.js';
 import { compactCount } from './pagination.js';
 // Sample content and client-side discovery for the platform preview.
@@ -67,12 +68,14 @@ export function discoverGames(catalog, state, params) {
   const minRating = Number(params.get('rating') || 0);
   const mode = params.get('mode') || 'All';
   const mood = params.get('mood') || 'All';
-  const hideFavorites = params.get('unplayed') === '1',tag=(params.get('tag')||'').trim().slice(0,30).toLowerCase();
+  const hideFavorites = params.get('unplayed') === '1';
+  const selectedTags = selectedGameTags(params).map(tag => tag.toLowerCase());
   let result = recommendGames(catalog, state).filter(game => {
     const info = game.metadata || gameDetails[game.id] || { tags: [], mode: 'Multiplayer', mood: 'Immersive' };
-    return (!query || `${game.title} ${game.genre} ${info.tags.join(' ')}`.toLowerCase().includes(query))
+    const tags = normalizeGameTags(info.tags || []).map(tag => tag.toLowerCase());
+    return (!query || `${game.title} ${game.genre} ${tags.join(' ')}`.toLowerCase().includes(query))
       && (category === 'All' || game.genre === category) && game.rating >= minRating
-      && (mode === 'All' || info.mode === mode) && (mood === 'All' || info.mood === mood) && (!tag || info.tags.some(value=>value.toLowerCase()===tag))
+      && (mode === 'All' || info.mode === mode) && (mood === 'All' || info.mood === mood) && selectedTags.every(tag => tags.includes(tag))
       && (!hideFavorites || !state.favorites.includes(game.id));
   });
   const sort = params.get('sort');

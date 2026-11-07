@@ -19,7 +19,10 @@ export function routeWithParams(route, current, changes) {
   const params = new URLSearchParams(current);
   for (const [key, value] of Object.entries(changes)) {
     if (value === null || value === '' || value === undefined) params.delete(key);
-    else params.set(key, value);
+    else if (Array.isArray(value)) {
+      params.delete(key);
+      for (const entry of value) params.append(key, entry);
+    } else params.set(key, value);
   }
   return `/${route}${params.size ? '?' + params.toString() : ''}`;
 }

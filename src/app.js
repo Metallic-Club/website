@@ -1,3 +1,4 @@
+import {normalizeGameTags, selectedGameTags, tagFilterLimit} from './game-tags.js';
 import {sampleGenreFamily} from './genres.js';
 import {createStorefront} from './storefront.js';
 import {passesFor,createGamePassUI} from './game-passes.js';
@@ -208,6 +209,17 @@ function friendStrip() {
 }
 function home() { return storefront.home(); }
 function explore() { return storefront.explore(); }
+const compactGameCount = new Intl.NumberFormat(undefined, {notation:'compact', maximumFractionDigits:1});
+function gameStats(game, sample) {
+  const favorites = game.favoriteCount == null ? null : game.favoriteCount + Number(sample && state.favorites.includes(game.id));
+  const count = (value, label) => value == null
+    ? `<div><strong aria-label="Unavailable">—</strong><span>${label}</span></div>`
+    : `<div><strong title="${value.toLocaleString()}" aria-label="${value.toLocaleString()}">${compactGameCount.format(value)}</strong><span>${label}</span></div>`;
+  return `<div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${esc(game.playing)}</strong><span>Active players</span></div>${count(game.visits,'Visits')}${count(favorites,'Favorites')}</div>`;
+}
+function gameTagLinks(tags) {
+  return `<div class="game-tag-row game-tag-links" aria-label="Game tags">${tags.map(tag=>link('explore?tag='+encodeURIComponent(tag),esc(tag),'game-tag-link')).join('')}</div>`;
+}
 function gamePage() {
   if(routeData.status==='loading')return pageHead('Loading game','Getting your next adventure ready.')+catalogLoading();
   if(routeData.status==='error')return pageHead('Game unavailable','Try again in a moment.')+catalogError();
@@ -219,7 +231,7 @@ function gamePage() {
   const progress=playerGameProgress(game,progressName,state.profile.name);
   const gameSectionLink=(tab,label)=>{const query=new URLSearchParams();if(tab)query.set('tab',tab);if(progressName!==state.profile.name)query.set('user',progressName);else if(params.get('viewAs'))query.set('viewAs',params.get('viewAs'));const selected=(params.get('tab')||'')===tab||!tab&&!['servers','achievements','passes'].includes(params.get('tab'));return `<a href="#/game/${game.id}${query.size?'?'+query:''}" class="${selected?'selected':''}" ${selected?'aria-current="page"':''}>${label}</a>`;};
   const descriptions={Puzzle:'Solve puzzles, test different ideas, and work with friends on the next challenge.',Survival:'Gather what you need, explore your surroundings, and work together to survive.',Strategy:'Plan your next move, build a strategy, and test it against a new challenge.',Shooter:'Choose your loadout, work with your team, and get ready for the next round.',Adventure:'Explore the unknown, discover hidden corners, and find your own path through a world full of possibility.',Action:'Bring your best moves, take on a new challenge, and team up with friends for your next adventure.',Obby:'Jump, dodge, and find your rhythm. Every obstacle is another chance to beat your personal best.',Simulation:'Start with a little imagination and make a world your own. Build, discover, and see where your curiosity takes you.',Roleplay:'Meet up with friends, find your favorite corner of the city, and create a story that belongs to you.',Racing:'Find your line and chase the perfect lap. A new personal best is waiting around the next corner.'};
-  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><div class="content-heading-actions"><h1>${esc(game.title)}</h1>${contentActions.trigger('game',game.id,game.title)}</div><p class="game-creator">By ${creatorLink(game.id)}</p><p>${descriptions[game.genre]||descriptions[sampleGenreFamily(game.genre)]||descriptions.Adventure}</p><div class="game-tag-row">${info.tags.map(tag=>`<span>${tag}</span>`).join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${game.playing}</strong><span>Active players</span></div><div><strong>${servers.length}</strong><span>Sample servers</span></div></div>${gameProgressSummary(game,progressName)}<div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}</div><p class="fine-print">Game activity, playtime, and achievements are sample data. Live gameplay is not connected.</p></div></section>
+  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${game.art}" alt="${esc(game.title)} artwork"><span>GAME PREVIEW</span></div><div><span class="eyebrow">${game.genre} · ${info.mode}</span><div class="content-heading-actions"><h1>${esc(game.title)}</h1>${contentActions.trigger('game',game.id,game.title)}</div><p class="game-creator">By ${creatorLink(game.id)}</p><p>${descriptions[game.genre]||descriptions[sampleGenreFamily(game.genre)]||descriptions.Adventure}</p>${gameTagLinks(info.tags)}${gameStats(game,true)}${gameProgressSummary(game,progressName)}<div class="game-actions">${button('play',icon('play',22)+' Play','button play-button',`data-id="${game.id}"`)}${button('favorite',icon('heart',18)+(state.favorites.includes(game.id)?' Favorited':' Favorite'),`button ${state.favorites.includes(game.id)?'is-saved':''}`,`data-id="${game.id}" aria-pressed="${state.favorites.includes(game.id)}"`)}</div><p class="fine-print">Game stats, playtime, and achievements are sample data. Live gameplay is not connected.</p></div></section>
     ${gameFriends(game.id)}<nav class="game-page-tabs" aria-label="Game sections">${gameSectionLink('','Overview')}${gameSectionLink('achievements','Achievements ('+progress.total+')')}${gameSectionLink('passes','Passes ('+passesFor(game).length+')')}${gameSectionLink('servers','Servers ('+servers.length+')')}</nav>
     ${passTab?gamePassUI.page(game):achievementTab?gameAchievementDetails(game,progressName):serverTab?`
     <section class="reserved-servers-section"><div class="section-top"><div><h2>Your servers <span class="muted">(${owned.length})</span></h2><p class="section-sub">Your own space, with public or invite-only access.</p></div>${button('create-server',icon('create',16)+' Create private server','button',`data-id="${game.id}"`)}</div><div class="private-server-price"><span>${icon('alloy',18)} <strong>${SERVER_PRICE} Alloy</strong><small>One-time preview creation cost</small></span><span>Preview balance: <strong>${state.previewAlloy.toLocaleString()} Alloy</strong></span></div>${owned.length?`<div class="server-list">${owned.map(serverCard).join('')}</div>`:'<div class="reserved-empty">'+icon('friends',23)+'<p>Make room for your friends. Create a server and decide who can join.</p></div>'}</section>
@@ -229,11 +241,11 @@ function gamePage() {
 }
 function remoteGamePage(game) {
   const info=metadataFor(game);
-  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${esc(game.art)}" alt="${esc(game.title)} artwork" width="960" height="540" fetchpriority="high"></div><div><span class="eyebrow">${esc(game.genre)} · ${esc(info.mode)}</span><div class="content-heading-actions"><h1>${esc(game.title)}</h1>${contentActions.trigger('game',game.id,game.title)}</div><div class="game-tag-row">${info.tags.map(tag=>'<span>'+esc(tag)+'</span>').join('')}</div><div class="detail-stats"><div><strong>${game.rating}%</strong><span>Liked</span></div><div><strong>${esc(game.playing)}</strong><span>Playing</span></div></div>${link('download','View launcher availability','button primary')}</div></section><nav class="game-page-tabs" aria-label="Game sections">${link('game/'+encodeURIComponent(game.id),'Overview',params.get('tab')!=='passes'?'selected':'')}${link('game/'+encodeURIComponent(game.id)+'?tab=passes','Passes',params.get('tab')==='passes'?'selected':'')}</nav>${params.get('tab')==='passes'?'<section class="game-passes"><h2>Passes</h2><p class="muted">Passes are not connected to the live catalog yet.</p></section>':'<section class="game-about"><h2>About this game</h2><p>'+esc(game.title)+' · '+esc(info.mode)+' · '+esc(info.mood)+'</p><p class="fine-print">Game information is supplied by the catalog. Live server browsing and launcher joining are not connected.</p></section>'}`;
+  return `${link('explore','← Explore games','text-link')}<section class="game-detail game-overview"><div class="game-keyart"><img class="detail-art" src="${esc(game.art)}" alt="${esc(game.title)} artwork" width="960" height="540" fetchpriority="high"></div><div><span class="eyebrow">${esc(game.genre)} · ${esc(info.mode)}</span><div class="content-heading-actions"><h1>${esc(game.title)}</h1>${contentActions.trigger('game',game.id,game.title)}</div>${gameTagLinks(info.tags)}${gameStats(game,false)}${link('download','View launcher availability','button primary')}</div></section><nav class="game-page-tabs" aria-label="Game sections">${link('game/'+encodeURIComponent(game.id),'Overview',params.get('tab')!=='passes'?'selected':'')}${link('game/'+encodeURIComponent(game.id)+'?tab=passes','Passes',params.get('tab')==='passes'?'selected':'')}</nav>${params.get('tab')==='passes'?'<section class="game-passes"><h2>Passes</h2><p class="muted">Passes are not connected to the live catalog yet.</p></section>':'<section class="game-about"><h2>About this game</h2><p>'+esc(game.title)+' · '+esc(info.mode)+' · '+esc(info.mood)+'</p><p class="fine-print">Game information is supplied by the catalog. Live server browsing and launcher joining are not connected.</p></section>'}`;
 }
 function auth() {
   const signup=route==='signup';
-  return `<div class="auth-layout"><div class="auth-story"><span class="eyebrow">WELCOME TO METALLIC</span><h2>Your next adventure<br>starts here.</h2><img src="art/game-5.svg" alt="Void Crafters world"><p>A little imagination. A whole new world.</p></div>
+  return `<div class="auth-layout"><div class="auth-story"><span class="eyebrow">WELCOME TO METALLIC</span><h2>Your next adventure<br>starts here.</h2><img src="art/game-unavailable.svg" alt="Void Crafters world"><p>A little imagination. A whole new world.</p></div>
     <section class="auth-card"><img class="brand-glyph" src="art/metallic-logo.svg" width="36" height="36" alt=""><h1>${signup?'Sign up for Metallic':'Log in to Metallic'}</h1><p>${signup?'A new world of possibilities starts with you.':'Pick up where you left off.'}</p>
     <form id="auth-form">${signup?`<div class="field"><label for="auth-username">Username</label><input id="auth-username" name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="Choose your username" aria-describedby="username-help"><small id="username-help">3–20 letters, numbers, or underscores.</small></div>`:''}
     <div class="field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
@@ -242,7 +254,7 @@ function auth() {
     <div class="form-notice">Preview only. No account is created. Your email and password are never saved or sent.</div><button class="button primary full" type="submit">${signup?'Preview sign up':'Preview log in'} ${icon('arrow',17)}</button></form>
     <div class="auth-divider"><span>or</span></div>${link('home','Explore as a guest','button full')}<p class="auth-switch">${signup?'Already exploring? '+link('login','Log in','text-link'):'New to Metallic? '+link('signup','Sign up','text-link')}</p></section></div>`;
 }
-function download() { return `${pageHead('The adventure starts here.','Your home for every Metallic game.')}<section class="download-hero"><div><span class="eyebrow">METALLIC LAUNCHER</span><h2>Less waiting.<br>More playing.</h2><p>One home for your games, your friends, and whatever you discover next.</p><div class="categories">${['Windows','macOS','Linux'].map(p=>button('platform',p,`cat ${platform===p?'selected':''}`,`data-value="${p}" aria-pressed="${platform===p}"`)).join('')}</div><button class="button primary download-button" disabled>${icon('download')} ${platform} release coming soon</button><p class="fine-print">The launcher is in development. An installer will appear here when an official release is available.</p></div><div class="launcher-mock"><div class="window-dots"><i></i><i></i><i></i><span>Metallic Launcher · Preview</span></div><img src="art/game-1.svg" alt="Launcher game preview"><div><strong>Your next adventure</strong><span>Cyber Raven: Neon Protocol</span><span class="launch-preview">${icon('play',15)} Jump in</span></div></div></section><div class="feature-columns download-features"><article><span class="step">01</span><h3>Get the launcher</h3><p>Download the official installer for your device when it becomes available.</p></article><article><span class="step">02</span><h3>Make yourself at home</h3><p>Sign in with your Metallic account and bring your identity with you.</p></article><article><span class="step">03</span><h3>Find your next favorite</h3><p>Explore games and jump into something new.</p></article></div><div class="panel"><h3>${platform} availability</h3><p class="muted">Release date, supported ${platform} versions, and system requirements will be confirmed with the first official launcher build.</p></div>`; }
+function download() { return `${pageHead('The adventure starts here.','Your home for every Metallic game.')}<section class="download-hero"><div><span class="eyebrow">METALLIC LAUNCHER</span><h2>Less waiting.<br>More playing.</h2><p>One home for your games, your friends, and whatever you discover next.</p><div class="categories">${['Windows','macOS','Linux'].map(p=>button('platform',p,`cat ${platform===p?'selected':''}`,`data-value="${p}" aria-pressed="${platform===p}"`)).join('')}</div><button class="button primary download-button" disabled>${icon('download')} ${platform} release coming soon</button><p class="fine-print">The launcher is in development. An installer will appear here when an official release is available.</p></div><div class="launcher-mock"><div class="window-dots"><i></i><i></i><i></i><span>Metallic Launcher · Preview</span></div><img src="art/game-unavailable.svg" alt="Launcher game preview"><div><strong>Your next adventure</strong><span>Cyber Raven: Neon Protocol</span><span class="launch-preview">${icon('play',15)} Jump in</span></div></div></section><div class="feature-columns download-features"><article><span class="step">01</span><h3>Get the launcher</h3><p>Download the official installer for your device when it becomes available.</p></article><article><span class="step">02</span><h3>Make yourself at home</h3><p>Sign in with your Metallic account and bring your identity with you.</p></article><article><span class="step">03</span><h3>Find your next favorite</h3><p>Explore games and jump into something new.</p></article></div><div class="panel"><h3>${platform} availability</h3><p class="muted">Release date, supported ${platform} versions, and system requirements will be confirmed with the first official launcher build.</p></div>`; }
 function wardrobe() {
   return `${pageHead('Wardrobe','Avatar customization is still in development.')}<section class="wardrobe-wip"><span class="wip-symbol">${icon('wardrobe',48)}</span><h2>Work in progress</h2><p>Nothing to see here yet.</p>${link('home','Back to Home '+icon('arrow',16),'button')}</section>`;
 }
@@ -650,8 +662,12 @@ document.addEventListener('click',async e=>{
     case 'doc-anchor':{const heading=document.getElementById(el.dataset.target)?.querySelector('h2');heading?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});heading?.focus({preventScroll:true});break;}
     case 'copy-doc-code':{const code=document.getElementById(el.dataset.target)?.textContent;if(code)try{await navigator.clipboard.writeText(code);el.textContent='Copied';toast('Code copied.');}catch{toast('Clipboard is unavailable. Select the code to copy it.');}break;}
     case 'retry-catalog':catalog.clear();routeData.key='';render();break;
-    case 'remove-filter':setQuery({[el.dataset.key]:null});break;
-    case 'clear-game-filters':setQuery({category:null,mode:null,mood:null,tag:null,rating:null,unplayed:null});break;
+    case 'remove-filter':{
+      const {key,tag}=el.dataset;
+      const tags=selectedGameTags(readRoute(location.hash).params);
+      setQuery(key==='tag'?{tag:tags.filter(value=>value!==tag)}:{[key]:null});break;
+    }
+    case 'clear-game-filters':setQuery({mode:null,mood:null,rating:null,unplayed:null});break;
     case 'menu':if(innerWidth<=820)setMenu(!document.querySelector('#sidebar').classList.contains('open'));else{sidebarCollapsed=!sidebarCollapsed;try{storage.setItem(sidebarStorageKey,sidebarCollapsed?'1':'0');}catch{}syncSidebarState();}break;
     case 'close-dialog':dialog.close();break;
     case 'discard-settings':settingsDirty=false;dialog.close();navigate(value);break;
@@ -706,7 +722,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
   const form=e.target;
-  if(!['content-report-form','docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','game-search-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
+  if(!['content-report-form','docs-search-form','search-form','friend-search','auth-form','settings-form','creator-upload-form','game-metadata-form','group-profile-form','group-shout-form','group-role-form','group-add-member-form','group-news-form','preference-form','discovery-filter-form','game-search-form','marketplace-search','server-form','group-form','group-search'].includes(form.id)&&!form.dataset.groupMember)return;
   e.preventDefault();if(!form.reportValidity())return;
   if(contentActions.submit(form))return;
   const data=new FormData(form);
@@ -716,6 +732,7 @@ document.addEventListener('submit',async e=>{
   if(form.id==='friend-search')setQuery({person:data.get('person').trim()});
   if(form.id==='auth-form'){if(route==='signup')state.profile.name=data.get('username');form.reset();persist('Welcome to the preview. No live account was created.');navigate('/home');}
   if(form.id==='group-news-form'){groupNews.submit(form);return;}
+  if(form.id==='game-metadata-form'){creatorWorkspace.saveGameMetadata(form);return;}
   if(form.id==='creator-upload-form'){await creatorWorkspace.importAsset(form);return;}
   if(['group-profile-form','group-shout-form','group-role-form','group-add-member-form'].includes(form.id)||form.dataset.groupMember){await groupControls.submit(form);return;}
   if(form.id==='settings-form'){
@@ -729,7 +746,7 @@ document.addEventListener('submit',async e=>{
   }
   if(form.id==='preference-form'){state.preferredGenres=data.getAll('genres').filter(genre=>genres.includes(genre));persist('Discovery updated for you.');dialog.close();render();}
   if(form.id==='discovery-filter-form'){
-    const changes=Object.fromEntries(['q','category','mood','mode','tag','rating'].map(key=>[key,data.get(key)==='All'?null:data.get(key)?.trim()||null]));
+    const changes=Object.fromEntries(['mood','mode','rating'].map(key=>[key,data.get(key)==='All'?null:data.get(key)?.trim()||null]));
     changes.unplayed=data.has('unplayed')?'1':null;setQuery(changes);
   }
   if(form.id==='marketplace-search')setQuery({q:data.get('q').trim().slice(0,160)||null,type:data.get('type')||null,price:data.get('price')||null,order:data.get('order')==='relevance'?null:data.get('order'),slot:null});
@@ -769,6 +786,10 @@ document.addEventListener('change',e=>{
   if(e.target.id==='theme-text-size'){setAppearance({textSize:e.target.value});return;}
   if(e.target.id==='theme-contrast'){setAppearance({contrast:e.target.checked});return;}
   if(e.target.id==='sort')setQuery({sort:e.target.value==='recommended'?null:e.target.value});
+  if(e.target.id==='browse-tag'&&e.target.value){
+    const tags=selectedGameTags(readRoute(location.hash).params);
+    setQuery({tag:normalizeGameTags([...tags,e.target.value],tagFilterLimit)});
+  }
   if(e.target.id==='browse-genre')setQuery({category:e.target.value==='All'?null:e.target.value});
   if(e.target.id==='profile-audience'){setQuery({viewAs:e.target.value||null});return;}
   if(e.target.id==='server-sort')setQuery({serverSort:e.target.value==='available'?null:e.target.value});

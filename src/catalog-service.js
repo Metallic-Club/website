@@ -1,27 +1,34 @@
 import {normalizeGenre} from './genres.js';
+import {normalizeGameTags, selectedGameTags} from './game-tags.js';
+import {missingGameArt} from './catalog.js';
 import { pageWindow, compactCount } from './pagination.js';
 const idPattern = /^[A-Za-z0-9_-]{1,64}$/;
 const sorts = new Set(['recommended', 'players', 'rating', 'name']);
 export const metadataFor = (game, details = {}) => game.metadata || details[game.id] || { tags: [], mode: 'Multiplayer', mood: 'Immersive' };
-const stableKey = (params, state) => JSON.stringify({ filters: ['q','category','mood','mode','tag','rating','sort','unplayed'].map(key=>[key,(params.get(key)||'').slice(0,160)]),
+const stableKey = (params, state, tags) => JSON.stringify({ filters: ['q','category','mood','mode','rating','sort','unplayed'].map(key=>[key,(params.get(key)||'').slice(0,160)]), tags,
   genres: [...(state.preferredGenres || [])].sort(), favorites: [...(state.favorites || [])].sort(), hidden: [...(state.hiddenGames || [])].sort() });
 export function createLocalCatalog(catalog, details = {}, { cacheSize = 20 } = {}) {
   const byId = new Map(catalog.map(game => [game.id, game]));
-  const records = catalog.map(game => ({ game, info: metadataFor(game, details), players: compactCount(game.playing),
-    text: [game.title, game.genre, ...metadataFor(game, details).tags].join(' ').toLowerCase() }));
+  const records = catalog.map(game => {
+    const info = metadataFor(game, details);
+    const tags = normalizeGameTags(info.tags || []);
+    return {game, info, tags: new Set(tags.map(tag => tag.toLowerCase())), players: compactCount(game.playing),
+      text: [game.title, game.genre, ...tags].join(' ').toLowerCase()};
+  });
   const cache = new Map();
   function list(params = new URLSearchParams(), state = {}) {
-    const key = stableKey(params, state);
+    const selectedTags = selectedGameTags(params).map(tag => tag.toLowerCase()).sort();
+    const key = stableKey(params, state, selectedTags);
     let matches = cache.get(key);
     if (!matches) {
       const favorites = new Set(state.favorites || []), hidden = new Set(state.hiddenGames || []);
       const weights = new Map((state.preferredGenres || []).map(genre => [genre, 5]));
       for (const id of favorites) { const game = byId.get(id); if (game) weights.set(game.genre, (weights.get(game.genre) || 0) + 3); }
       const q = (params.get('q') || '').trim().toLowerCase().slice(0, 160), genre = normalizeGenre(params.get('category')) || params.get('category') || 'All';
-      const mood = params.get('mood') || 'All', mode = params.get('mode') || 'All', rating = Number(params.get('rating')) || 0, tag=(params.get('tag')||'').trim().slice(0,30).toLowerCase();
+      const mood = params.get('mood') || 'All', mode = params.get('mode') || 'All', rating = Number(params.get('rating')) || 0;
       const sort = sorts.has(params.get('sort')) ? params.get('sort') : 'recommended';
-      matches = records.filter(({ game, info, text }) => !hidden.has(game.id) && (!q || text.includes(q)) && (genre === 'All' || (normalizeGenre(game.genre)||game.genre) === genre)
-        && (mood === 'All' || info.mood === mood) && (mode === 'All' || info.mode === mode) && (!tag || info.tags.some(value=>value.toLowerCase()===tag)) && game.rating >= rating
+      matches = records.filter(({ game, info, text, tags }) => !hidden.has(game.id) && (!q || text.includes(q)) && (genre === 'All' || (normalizeGenre(game.genre)||game.genre) === genre)
+        && (mood === 'All' || info.mood === mood) && (mode === 'All' || info.mode === mode) && selectedTags.every(tag => tags.has(tag)) && game.rating >= rating
         && (params.get('unplayed') !== '1' || !favorites.has(game.id)));
       const score = game => (weights.get(game.genre) || 0) * 10 + game.rating / 10 + (favorites.has(game.id) ? -25 : 2);
       matches.sort((a, b) => (sort === 'players' ? b.players - a.players : sort === 'rating' ? b.game.rating - a.game.rating
@@ -37,14 +44,16 @@ export function createLocalCatalog(catalog, details = {}, { cacheSize = 20 } = {
 function validateGame(value, base) {
   if (!value || !idPattern.test(value.id) || typeof value.title !== 'string' || !value.title.trim() || value.title.length > 120
     || typeof value.genre !== 'string' || value.genre.length > 40 || !Number.isFinite(value.rating) || value.rating < 0 || value.rating > 100
-    || typeof value.playing !== 'string' || value.playing.length > 20 || typeof value.art !== 'string') throw Error('Invalid game response.');
-  const art = new URL(value.art, base);
-  if (art.protocol !== 'https:' && !(art.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(art.hostname))) throw Error('Invalid artwork URL.');
+    || typeof value.playing !== 'string' || value.playing.length > 20 || value.art != null && typeof value.art !== 'string') throw Error('Invalid game response.');
+  const art = value.art?.trim() ? new URL(value.art, base) : null;
+  if (art && art.protocol !== 'https:' && !(art.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(art.hostname))) throw Error('Invalid artwork URL.');
   const info = value.metadata || {};
-  return { id: value.id, title: value.title, genre: normalizeGenre(value.genre)||value.genre, rating: value.rating, playing: value.playing, art: art.href,
+  const count = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+  return { id: value.id, title: value.title, genre: normalizeGenre(value.genre)||value.genre, rating: value.rating, playing: value.playing, art: art?.href || missingGameArt,
+    visits: count(value.visits), favoriteCount: count(value.favoriteCount),
     metadata: { mode: ['Solo', 'Co-op', 'Multiplayer'].includes(info.mode) ? info.mode : 'Multiplayer',
       mood: typeof info.mood === 'string' ? info.mood.slice(0, 40) : 'Immersive',
-      tags: Array.isArray(info.tags) ? info.tags.filter(tag => typeof tag === 'string').slice(0, 6).map(tag => tag.slice(0, 30)) : [] } };
+      tags: normalizeGameTags(Array.isArray(info.tags) ? info.tags : []) } };
 }
 // Optional read-only catalog endpoint. Accounts, joins, currency and publishing remain separate services.
 export function createCatalogClient({ local, endpoint = '', fetchImpl = globalThis.fetch, timeoutMs = 8000, ttlMs = 30000, cacheSize = 20 } = {}) {
@@ -89,7 +98,8 @@ export function createCatalogClient({ local, endpoint = '', fetchImpl = globalTh
   return { remote: Boolean(endpoint), peek: id => known.get(id) || local.get(id),
     async list(params, state, { signal } = {}) {
       if (!endpoint) { signal?.throwIfAborted(); return local.list(params, state); }
-      const query = new URLSearchParams([...params].filter(([key]) => ['q', 'category', 'mood', 'mode', 'tag', 'rating', 'sort', 'page'].includes(key)).map(([key,value])=>[key,key==='category'?(normalizeGenre(value)||value).slice(0,160):value.slice(0,key==='tag'?30:160)]));
+      const query = new URLSearchParams([...params].filter(([key]) => ['q', 'category', 'mood', 'mode', 'rating', 'sort', 'page'].includes(key)).map(([key,value])=>[key,key==='category'?(normalizeGenre(value)||value).slice(0,160):value.slice(0,160)]));
+      for (const tag of selectedGameTags(params)) query.append('tag', tag);
       query.set('limit', '12');
       const page=query.get('page')||'1';query.set('page',/^\d{1,7}$/.test(page)&&Number(page)>0?page:'1');
       return request('/v1/games', query, signal);
