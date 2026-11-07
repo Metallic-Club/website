@@ -1,10 +1,12 @@
+import {normalizeGenre} from './genres.js';
+import {normalizeGameTags} from './game-tags.js';
 import {creatorTypes, marketplaceAssets} from './platform.js';
 
 export const defaultTemplates = [
-  {id:'template-blank', name:'Blank canvas', art:'art/game-5.svg', description:'An empty scene with a ground plane and a player spawn.', scene:'blank'},
-  {id:'template-obby', name:'Obby', art:'art/game-2.svg', description:'Platforms, checkpoints, and a finish line for a short obstacle course.', scene:'obby'},
-  {id:'template-world', name:'Open world', art:'art/game-5.svg', description:'A landscape layout for exploring, gathering, and building.', scene:'world'},
-  {id:'template-social', name:'Social hangout', art:'art/game-6.svg', description:'A shared space with seating and places to meet.', scene:'social'},
+  {id:'template-blank', name:'Blank canvas', art:'art/game-unavailable.svg', description:'An empty scene with a ground plane and a player spawn.', scene:'blank'},
+  {id:'template-obby', name:'Obby', art:'art/game-unavailable.svg', description:'Platforms, checkpoints, and a finish line for a short obstacle course.', scene:'obby'},
+  {id:'template-world', name:'Open world', art:'art/game-unavailable.svg', description:'A landscape layout for exploring, gathering, and building.', scene:'world'},
+  {id:'template-social', name:'Social hangout', art:'art/game-unavailable.svg', description:'A shared space with seating and places to meet.', scene:'social'},
 ].map(item=>({...item,type:'templates',subcategory:'Starter template',creator:'Metallic',tags:['Starter',item.scene],price:0,defaultTemplate:true}));
 export const extraAssets = [
   {id:'player-controller',name:'Third-Person Player Controller',type:'plugins',kind:'systems',subcategory:'Player controllers',description:'A starter movement system with walking, sprinting, jumping, and a follow camera.',tags:['Character','Movement','Camera','Luau'],creator:'CloudBuilder',price:260,color:'blue'},
@@ -30,7 +32,8 @@ export function normalizeAssets(data){
   const seen=new Set([...defaultTemplates,...publicAssets].map(asset=>asset.id));
   return (Array.isArray(data)?data:[]).filter(asset=>asset&&typeof asset.id==='string'&&/^[\w-]{1,64}$/.test(asset.id)&&!seen.has(asset.id)&&seen.add(asset.id)&&typeof asset.name==='string'&&asset.name.trim()&&Object.hasOwn(creatorTypes,asset.type)&&Array.isArray(asset.files)&&asset.files.length>0).slice(0,100).map(asset=>({
     id:asset.id,name:asset.name.trim().slice(0,60),type:asset.type,subcategory:typeof asset.subcategory==='string'?asset.subcategory.slice(0,30):creatorTypes[asset.type],description:typeof asset.description==='string'?asset.description.slice(0,1000):'',
-    tags:Array.isArray(asset.tags)?[...new Set(asset.tags.filter(tag=>typeof tag==='string').map(tag=>tag.trim().slice(0,24)).filter(Boolean))].slice(0,8):[],price:0,local:true,
+    ...(asset.type==='games'?{genre:normalizeGenre(asset.genre)}:{}),
+    tags:asset.type==='games'?normalizeGameTags(Array.isArray(asset.tags)?asset.tags:[]):Array.isArray(asset.tags)?[...new Set(asset.tags.filter(tag=>typeof tag==='string').map(tag=>tag.trim().slice(0,24)).filter(Boolean))].slice(0,8):[],price:0,local:true,
     files:asset.files.filter(file=>file&&typeof file.key==='string'&&/^[\w-]{1,100}$/.test(file.key)&&typeof file.name==='string'&&Number.isSafeInteger(file.size)&&file.size>=0&&file.size<=50*1024*1024).slice(0,100).map(file=>({key:file.key,name:file.name.slice(0,240),size:file.size,mime:typeof file.mime==='string'?file.mime.slice(0,100):''})),
   })).filter(asset=>asset.files.length);
 }

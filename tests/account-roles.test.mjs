@@ -35,7 +35,9 @@ test('YouTube profile links are canonical and editable profile data cannot persi
 });
 test('expanded sample catalog and community have unique identities, searchable metadata and valid creators',()=>{
   assert.ok(games.length>=32);assert.ok(sampleAccounts.length>=32);
-  assert.equal(new Set(games.map(game=>game.id)).size,games.length);assert.equal(new Set(games.map(game=>game.art)).size,games.length);
+  assert.equal(new Set(games.map(game=>game.id)).size,games.length);
+  assert.equal(new Set(games.map(game=>game.placeholderArt)).size,games.length);
+  assert.ok(games.every(game=>game.art==='art/game-unavailable.svg'));
   assert.equal(new Set(sampleAccounts.map(account=>account.id)).size,sampleAccounts.length);
   assert.equal(new Set(sampleAccounts.map(account=>account.name.toLowerCase())).size,sampleAccounts.length);
   for(const game of games){assert.ok(gameDetails[game.id]?.tags.length);const owner=ownerForGame(game.id);if(owner.type==='user')assert.ok(sampleAccounts.some(account=>account.name===owner.name));}

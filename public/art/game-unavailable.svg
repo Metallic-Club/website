@@ -1,1 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><rect width="240" height="240" rx="12" fill="#252831"/><path d="m75 94 45-23 45 23v52l-45 23-45-23z" fill="none" stroke="#555e70" stroke-width="4"/><path d="m75 94 45 23 45-23m-45 23v52" fill="none" stroke="#555e70" stroke-width="4"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540">
+  <defs>
+    <pattern id="texture" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M0 0h40v40H0zm40 40h40v40H40z" fill="#2b2b2b"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h960v540H0z" fill="#252525"/>
+  <path d="M0 0h960v540H0z" fill="url(#texture)"/>
+  <circle cx="480" cy="270" r="69" fill="#202020" stroke="#414141" stroke-width="2"/>
+  <g fill="none" stroke="#a5a5a5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="444" y="244" width="72" height="52" rx="5"/>
+    <path d="m445 283 19-15 16 14 11-10 24 20m-65-54 60 64"/>
+  </g>
+</svg>
