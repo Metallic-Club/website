@@ -110,7 +110,7 @@ function presenceDot(name) {
   const status=presenceFor(state,name);
   return `<i class="presence ${status.key}" data-presence="${status.key}" role="img" aria-label="${status.label}" title="${status.label}"></i>`;
 }
-const brand = () => `<a class="brand" href="${['','login','signup'].includes(route)?'#/':'#/home'}"><span class="brand-glyph">M</span><span class="brand-word">Metallic</span></a>`;
+const brand = () => `<a class="brand" aria-label="Metallic" href="${['','login','signup'].includes(route)?'#/':'#/home'}"><img class="brand-glyph" src="art/metallic-logo.svg" width="36" height="36" alt=""><span class="brand-word">Metallic</span></a>`;
 function activityText(name,text='') {
   const status=activityFor(state,name);
   return `<span class="activity-text" data-presence="${status.key}">${esc(status.key==='playing'&&text?text:status.text)}</span>`;
@@ -234,7 +234,7 @@ function remoteGamePage(game) {
 function auth() {
   const signup=route==='signup';
   return `<div class="auth-layout"><div class="auth-story"><span class="eyebrow">WELCOME TO METALLIC</span><h2>Your next adventure<br>starts here.</h2><img src="art/game-5.svg" alt="Void Crafters world"><p>A little imagination. A whole new world.</p></div>
-    <section class="auth-card"><span class="brand-glyph">M</span><h1>${signup?'Sign up for Metallic':'Log in to Metallic'}</h1><p>${signup?'A new world of possibilities starts with you.':'Pick up where you left off.'}</p>
+    <section class="auth-card"><img class="brand-glyph" src="art/metallic-logo.svg" width="36" height="36" alt=""><h1>${signup?'Sign up for Metallic':'Log in to Metallic'}</h1><p>${signup?'A new world of possibilities starts with you.':'Pick up where you left off.'}</p>
     <form id="auth-form">${signup?`<div class="field"><label for="auth-username">Username</label><input id="auth-username" name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="Choose your username" aria-describedby="username-help"><small id="username-help">3–20 letters, numbers, or underscores.</small></div>`:''}
     <div class="field"><label for="auth-email">Email address</label><input id="auth-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
     <div class="field"><label for="password">Password</label><div class="password-field"><input name="password" id="password" type="password" required minlength="8" autocomplete="${signup?'new-password':'current-password'}" placeholder="At least 8 characters" aria-describedby="password-help">${button('password','Show','password-toggle','aria-label="Show password" aria-pressed="false"')}</div><small id="password-help">Use a sample password for this preview.</small></div>
@@ -289,7 +289,7 @@ function profile() {
   const profileActivity=!own&&presenceFor(state,name).key==='playing'?friendActivity(state,name):null;
   const profileJoin=profileActivity?.access.allowed?button('join-friend',icon('play',18)+' Join game','button play-button',`data-name="${esc(name)}"`):'';
   const friendAction=state.friends.includes(name)?button('remove-friend','Friends '+icon('check',16),'button',`data-name="${esc(name)}"`):state.requests.includes(name)?button('accept-friend','Accept request','button primary',`data-name="${esc(name)}"`):state.outgoing.includes(name)?button('cancel-friend','Cancel request','button',`data-name="${esc(name)}"`):button('add-friend','Add friend','button primary',`data-name="${esc(name)}"`);
-  return `${preview}<section class="profile-cover"><div class="cover-mark">M</div><span class="eyebrow">${own?'YOUR CORNER OF METALLIC':'PLAYER PROFILE'}</span></section>
+  return `${preview}<section class="profile-cover"><img class="cover-mark" src="art/metallic-logo.svg" width="300" height="300" alt=""><span class="eyebrow">${own?'YOUR CORNER OF METALLIC':'PLAYER PROFILE'}</span></section>
     <section class="profile-header">${own?avatar(0,'profile-avatar'):referenceAvatar(person.avatar,'profile-avatar')}<div><h1>${accountName(name)}</h1><p>@${esc(name)} <span class="profile-online">${activityText(name)}</span></p>
     ${!own&&access.friends?`<a class="mutual-summary" href="#/profile?user=${encodeURIComponent(name)}&friends=mutual"><span>${mutual.length} mutual friend${mutual.length===1?'':'s'}</span></a>`:''}</div><div class="profile-header-action content-page-actions">${own?link('settings?section=account','Edit profile','button'):friendAction}${profileJoin}${contentActions.trigger('profile',name,name)}</div></section>
     <div class="account-profile-layout"><div class="profile-main-column">
